@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safely Alter Large MySQL Tables with Online DDL - mysql</title>
+    <meta name="description" content="Altering large production MySQL tables can cause downtime, lock databases, and degrade application performance if done incorrectly. This article explains how to safely execute schema changes on massive MySQL tables using native Online DDL features, along">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/safely-alter-large-mysql-tables-with-online-ddl">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Safely Alter Large MySQL Tables with Online DDL - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/safely-alter-large-mysql-tables-with-online-ddl" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="Altering large production MySQL tables can cause downtime, lock databases, and degrade application performance if done incorrectly. This article explains how to safely execute schema changes on massive MySQL tables using native Online DDL features, along" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="safely-alter-large-mysql-tables-with-online-ddl">Safely Alter
+Large MySQL Tables with Online DDL</h1>
+<p>Altering large production MySQL tables can cause downtime, lock
+databases, and degrade application performance if done incorrectly. This
+article explains how to safely execute schema changes on massive MySQL
+tables using native Online DDL features, alongside robust external tools
+like <code>pt-online-schema-change</code> and <code>gh-ost</code>. You
+will learn how to evaluate algorithm choices, manage database resources,
+and implement best practices to alter production databases without
+interrupting user traffic.</p>
+<h2 id="understanding-native-mysql-online-ddl">Understanding Native
+MySQL Online DDL</h2>
+<p>MySQL (specifically the InnoDB storage engine) supports native Online
+DDL, which allows you to run <code>ALTER TABLE</code> statements while
+concurrent DML (insert, update, delete) operations continue. To control
+how the alter is executed, you should explicitly define the
+<code>ALGORITHM</code> and <code>LOCK</code> clauses.</p>
+<h3 id="the-algorithm-clause">The ALGORITHM Clause</h3>
+<ul>
+<li><strong>INSTANT:</strong> Available in MySQL 8.0+, this algorithm
+modifies only the table's metadata. It executes almost instantly
+regardless of table size and does not block concurrent writes.</li>
+<li><strong>INPLACE:</strong> The operation is performed within the
+InnoDB engine. It avoids copying the entire table to a temporary file
+when possible, though it may rebuild the table internally. It allows
+concurrent reads and writes during most of the execution.</li>
+<li><strong>COPY:</strong> The traditional method where MySQL creates a
+copy of the table, applies the changes, copies all rows, and replaces
+the old table. This blocks write operations and should be avoided on
+large production tables.</li>
+</ul>
+<h3 id="the-lock-clause">The LOCK Clause</h3>
+<ul>
+<li><strong>NONE:</strong> Permits concurrent reads and writes. If the
+requested operation cannot be completed without blocking writes, the
+statement fails immediately.</li>
+<li><strong>SHARED:</strong> Permits concurrent reads but blocks
+writes.</li>
+<li><strong>EXCLUSIVE:</strong> Blocks both reads and writes.</li>
+</ul>
+<h3 id="safe-native-online-ddl-syntax">Safe Native Online DDL
+Syntax</h3>
+<p>To ensure your native alter statement does not accidentally block
+production traffic, explicitly state the safest options:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> orders <span class="kw">ADD</span> <span class="kw">COLUMN</span> discount_code <span class="dt">VARCHAR</span>(<span class="dv">20</span>) <span class="kw">DEFAULT</span> <span class="kw">NULL</span>,</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>ALGORITHM<span class="op">=</span>INSTANT, <span class="kw">LOCK</span><span class="op">=</span><span class="kw">NONE</span>;</span></code></pre></div>
+<p>If <code>INSTANT</code> is not supported for your specific
+alteration, fallback to <code>INPLACE</code>:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> orders <span class="kw">ADD</span> <span class="kw">INDEX</span> idx_user_created (user_id, created_at),</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ALGORITHM<span class="op">=</span>INPLACE, <span class="kw">LOCK</span><span class="op">=</span><span class="kw">NONE</span>;</span></code></pre></div>
+<h2 id="limitations-of-native-online-ddl">Limitations of Native Online
+DDL</h2>
+<p>While native Online DDL is highly effective, it has limitations on
+massive tables (e.g., hundreds of gigabytes or terabytes):</p>
+<ul>
+<li><strong>Replication Lag:</strong> The master performs the DDL
+online, but replication to replicas is often serialized. Replicas may
+block while applying the DDL, causing massive replication lag.</li>
+<li><strong>Disk Space:</strong> Operations that rebuild tables
+(<code>ALGORITHM=INPLACE</code>) require temporary disk space equivalent
+to the size of the table.</li>
+<li><strong>Buffer Pool Pollution:</strong> Rebuilding a massive table
+can flush frequently accessed data out of the InnoDB buffer pool,
+degrading read performance.</li>
+<li><strong>Undo Log and Temp Space:</strong> Concurrent DML writes
+during an <code>INPLACE</code> operation are recorded in an online DDL
+log. If this log exceeds <code>innodb_online_alter_log_max_size</code>,
+the alteration fails and rolls back, which can take hours.</li>
+</ul>
+<h2 id="utilizing-third-party-tools-for-large-scale-changes">Utilizing
+Third-Party Tools for Large Scale Changes</h2>
+<p>When native Online DDL poses too much risk to replication or
+performance, industry-standard third-party tools should be used.</p>
+<h3 id="pt-online-schema-change-percona">pt-online-schema-change
+(Percona)</h3>
+<p>This tool creates a ghost copy of the target table, applies the
+schema changes to the empty ghost table, and creates triggers on the
+original table to copy concurrent writes. It then copies data from the
+original table to the ghost table in small, manageable chunks. Once
+complete, it atomically swaps the tables.</p>
+<ul>
+<li><strong>Pros:</strong> Highly reliable, widely used, automatically
+throttles if replica lag or system load increases.</li>
+<li><strong>Cons:</strong> The use of triggers can add write overhead to
+highly active tables.</li>
+</ul>
+<h3 id="gh-ost-github-online-schema-migrator">gh-ost (GitHub Online
+Schema Migrator)</h3>
+<p><code>gh-ost</code> is a triggerless online schema migration tool.
+Instead of triggers, it parses the MySQL binary log (binlog) in
+real-time to capture concurrent writes and apply them to the ghost
+table.</p>
+<ul>
+<li><strong>Pros:</strong> Triggerless design avoids locking issues and
+performance overhead on the master. You can pause and resume the
+migration at any time.</li>
+<li><strong>Cons:</strong> Requires row-based replication (RBR) enabled
+and configuration of binlog streaming permissions.</li>
+</ul>
+<h2 id="best-practices-for-production-execution">Best Practices for
+Production Execution</h2>
+<p>To guarantee a safe schema migration on a large production MySQL
+database, adhere to the following checklist:</p>
+<ol type="1">
+<li><strong>Validate on Staging:</strong> Run the exact DDL statement or
+tool execution on a staging database populated with production-scale
+data to measure execution time, disk space usage, and IOPS.</li>
+<li><strong>Verify Disk Space:</strong> Ensure you have at least 1.5 to
+2 times the table's current size in free disk space before running an
+inplace rebuild or using third-party migration tools.</li>
+<li><strong>Monitor Replication Lag:</strong> If using replicas, monitor
+lag closely. Configure tools like <code>pt-online-schema-change</code>
+or <code>gh-ost</code> to automatically pause if replica lag exceeds a
+safe threshold (e.g., 10 seconds).</li>
+<li><strong>Execute During Off-Peak Hours:</strong> Even with online
+tools, heavy schema changes consume disk I/O and CPU. Run these
+operations during periods of low application traffic.</li>
+<li><strong>Configure Timeouts:</strong> Set safe session timeout
+variables to prevent a hung metadata lock from stalling the application
+if the DDL operation gets blocked at the start or end of its run.</li>
+</ol></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

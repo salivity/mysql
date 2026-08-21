@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Configure MySQL to Use TLS 1.3 - mysql</title>
+    <meta name="description" content="Securing database communication is critical for protecting sensitive data from interception and tampering. This article provides a direct guide on how to configure a MySQL instance to exclusively use TLS 1.3 for all incoming client connections. You will">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-to-configure-mysql-to-use-tls-1-3">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How to Configure MySQL to Use TLS 1.3 - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-to-configure-mysql-to-use-tls-1-3" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="Securing database communication is critical for protecting sensitive data from interception and tampering. This article provides a direct guide on how to configure a MySQL instance to exclusively use TLS 1.3 for all incoming client connections. You will" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-to-configure-mysql-to-use-tls-13">How to Configure MySQL to
+Use TLS 1.3</h1>
+<p>Securing database communication is critical for protecting sensitive
+data from interception and tampering. This article provides a direct
+guide on how to configure a MySQL instance to exclusively use TLS 1.3
+for all incoming client connections. You will learn the required
+prerequisites, the specific configuration file changes needed to enforce
+TLS 1.3, and how to verify that your database is successfully
+restricting older, less secure protocols.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>To enforce TLS 1.3, your environment must meet the following
+requirements:</p>
+<ul>
+<li><strong>MySQL Server version:</strong> 8.0.16 or higher (TLS 1.3
+support is not available in older versions).</li>
+<li><strong>OpenSSL version:</strong> MySQL must be compiled with
+OpenSSL 1.1.1 or higher.</li>
+<li><strong>SSL Certificates:</strong> You must have valid CA, server
+certificate, and server private key files.</li>
+</ul>
+<hr />
+<h3 id="step-1-locate-and-edit-the-mysql-configuration-file">Step 1:
+Locate and Edit the MySQL Configuration File</h3>
+<p>Open your MySQL configuration file (typically <code>my.cnf</code> on
+Linux/macOS or <code>my.ini</code> on Windows) using an administrative
+text editor. Common paths include <code>/etc/mysql/my.cnf</code>,
+<code>/etc/my.cnf</code>, or
+<code>/etc/mysql/mysql.conf.d/mysqld.cnf</code>.</p>
+<p>Under the <code>[mysqld]</code> section, specify the paths to your
+SSL certificates and set the <code>tls_version</code> system variable to
+strictly allow TLSv1.3:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[mysqld]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify the paths to your SSL certificates</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl-ca</span><span class="ot">=</span><span class="st">/var/lib/mysql/ca.pem</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl-cert</span><span class="ot">=</span><span class="st">/var/lib/mysql/server-cert.pem</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl-key</span><span class="ot">=</span><span class="st">/var/lib/mysql/server-key.pem</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Restrict incoming connections to TLS 1.3 only</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="dt">tls_version</span><span class="ot">=</span><span class="st">TLSv1.3</span></span></code></pre></div>
+<p><em>(Note: If you want to allow TLS 1.2 alongside TLS 1.3 as a
+transition phase, you can write <code>tls_version=TLSv1.2,TLSv1.3</code>
+instead.)</em></p>
+<hr />
+<h3 id="step-2-restart-the-mysql-service">Step 2: Restart the MySQL
+Service</h3>
+<p>To apply the changes, restart the MySQL database service. Run the
+appropriate command for your operating system:</p>
+<p><strong>For systemd-based Linux systems (Ubuntu, Debian, CentOS,
+RHEL):</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart mysql</span></code></pre></div>
+<p><em>(On some systems, the service may be named
+<code>mysqld</code>)</em></p>
+<p><strong>For Windows systems:</strong></p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode cmd"><code class="sourceCode dosbat"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>net stop MySQL80 <span class="kw">&amp;&amp;</span> net start MySQL80</span></code></pre></div>
+<hr />
+<h3 id="step-3-verify-tls-13-enforcement">Step 3: Verify TLS 1.3
+Enforcement</h3>
+<p>Log into your MySQL instance using the MySQL command-line client to
+confirm that the server is successfully running TLS 1.3.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-u</span> root <span class="at">-p</span></span></code></pre></div>
+<p>Once logged in, execute the following SQL query to check the active
+TLS versions supported by the server:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>SHOW VARIABLES <span class="kw">LIKE</span> <span class="st">&#39;tls_version&#39;</span>;</span></code></pre></div>
+<p>The output should display:</p>
+<pre class="text"><code>+---------------+---------+
+| Variable_name | Value   |
++---------------+---------+
+| tls_version   | TLSv1.3 |
++---------------+---------+</code></pre>
+<p>Next, verify the encryption status of your current active connection
+by running:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>\s</span></code></pre></div>
+<p>Look for the <strong>SSL</strong> line in the output. It should
+specify that the connection is active and utilizes a TLS 1.3 cipher
+suite, for example:</p>
+<pre class="text"><code>SSL: Cipher in use is TLS_AES_256_GCM_SHA384</code></pre>
+<hr />
+<h3 id="step-4-enforce-tls-13-for-specific-users-optional">Step 4:
+Enforce TLS 1.3 for Specific Users (Optional)</h3>
+<p>To ensure that specific database users are strictly required to use
+secure connections, you can alter their user profiles to require
+encrypted connections:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="fu">USER</span> <span class="st">&#39;username&#39;</span>@<span class="st">&#39;host&#39;</span> REQUIRE SSL;</span></code></pre></div></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

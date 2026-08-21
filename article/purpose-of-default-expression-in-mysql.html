@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purpose of Default Expression in MySQL - mysql</title>
+    <meta name="description" content="This article explains the purpose, functionality, and benefits of the DEFAULT expression attribute for columns in MySQL. It covers how this attribute allows databases to automatically assign dynamic values to columns during row insertion, thereby ensurin">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/purpose-of-default-expression-in-mysql">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Purpose of Default Expression in MySQL - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/purpose-of-default-expression-in-mysql" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains the purpose, functionality, and benefits of the DEFAULT expression attribute for columns in MySQL. It covers how this attribute allows databases to automatically assign dynamic values to columns during row insertion, thereby ensurin" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="purpose-of-default-expression-in-mysql">Purpose of Default
+Expression in MySQL</h1>
+<p>This article explains the purpose, functionality, and benefits of the
+<code>DEFAULT</code> expression attribute for columns in MySQL. It
+covers how this attribute allows databases to automatically assign
+dynamic values to columns during row insertion, thereby ensuring data
+integrity, simplifying application logic, and enabling advanced database
+design.</p>
+<h2 id="what-is-the-default-expression-attribute">What is the Default
+Expression Attribute?</h2>
+<p>In MySQL, the <code>DEFAULT</code> attribute specifies a default
+value for a column. When a new row is inserted into a table and no value
+is explicitly provided for that column, MySQL automatically assigns the
+default value.</p>
+<p>While older versions of MySQL only allowed constant values (like
+strings or numbers) as defaults, MySQL 8.0 introduced support for
+<strong>default expressions</strong>. This means you can now use
+functions, mathematical operations, and system variables enclosed in
+parentheses to dynamically calculate a default value at the moment of
+insertion.</p>
+<h2 id="key-purposes-of-default-expressions">Key Purposes of Default
+Expressions</h2>
+<h3 id="1-generating-dynamic-values-automatically">1. Generating Dynamic
+Values Automatically</h3>
+<p>The primary purpose of default expressions is to generate dynamic
+data without requiring application-level logic. Common use cases
+include:</p>
+<ul>
+<li><strong>Timestamps:</strong> Automatically recording the exact time
+a row was created using <code>DEFAULT (CURRENT_TIMESTAMP)</code> or
+<code>DEFAULT (NOW())</code>.</li>
+<li><strong>Unique Identifiers:</strong> Assigning a Universally Unique
+Identifier to a primary or secondary key using
+<code>DEFAULT (UUID())</code>.</li>
+<li><strong>Calculated Fallbacks:</strong> Setting a default value based
+on a mathematical formula, such as <code>DEFAULT (10 + 5)</code>.</li>
+</ul>
+<h3 id="2-ensuring-data-integrity">2. Ensuring Data Integrity</h3>
+<p>Default expressions act as a safety net for database integrity. If a
+client application fails to provide a value for a mandatory
+column—either due to a programming oversight or an API limitation—the
+database guarantees that the column is populated with valid, pre-defined
+data rather than failing with a <code>NOT NULL</code> constraint
+error.</p>
+<h3 id="3-simplifying-application-code">3. Simplifying Application
+Code</h3>
+<p>By handling default value generation at the database level, you
+reduce the amount of boilerplate code required in your application
+backend. Developers do not need to write code to generate UUIDs, fetch
+system times, or calculate baseline values before sending an
+<code>INSERT</code> query; the database handles these tasks natively and
+consistently across all connected services.</p>
+<h2 id="syntax-and-rules">Syntax and Rules</h2>
+<p>To use an expression as a default value, the expression must be
+enclosed within parentheses. This distinguishes it from a literal
+constant.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> users (</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> <span class="dt">INT</span> AUTO_INCREMENT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    username <span class="dt">VARCHAR</span>(<span class="dv">50</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    signup_date DATETIME <span class="kw">DEFAULT</span> (NOW()),</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    user_token <span class="dt">VARCHAR</span>(<span class="dv">36</span>) <span class="kw">DEFAULT</span> (UUID())</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<ul>
+<li><strong>Constant Default:</strong> <code>DEFAULT 'active'</code> (No
+parentheses needed for literal values).</li>
+<li><strong>Expression Default:</strong>
+<code>DEFAULT (RAND() * 100)</code> (Parentheses are mandatory).</li>
+</ul>
+<h3 id="key-restrictions">Key Restrictions</h3>
+<ul>
+<li>The expression cannot refer to <code>AUTO_INCREMENT</code>
+columns.</li>
+<li>The expression cannot refer to other columns in the same table.</li>
+<li>The expression must resolve to a data type that is compatible with
+the column's defined data type.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

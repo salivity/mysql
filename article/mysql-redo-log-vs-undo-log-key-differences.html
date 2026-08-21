@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Redo Log vs Undo Log: Key Differences - mysql</title>
+    <meta name="description" content="This article explores the core architectural differences between MySQL's redo logs and undo logs within the InnoDB storage engine. While both logs are essential for maintaining database transactions and preventing data corruption, they serve fundamentall">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-redo-log-vs-undo-log-key-differences">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Redo Log vs Undo Log: Key Differences - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-redo-log-vs-undo-log-key-differences" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explores the core architectural differences between MySQL's redo logs and undo logs within the InnoDB storage engine. While both logs are essential for maintaining database transactions and preventing data corruption, they serve fundamentall" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-redo-log-vs-undo-log-key-differences">MySQL Redo Log vs
+Undo Log: Key Differences</h1>
+<p>This article explores the core architectural differences between
+MySQL's redo logs and undo logs within the InnoDB storage engine. While
+both logs are essential for maintaining database transactions and
+preventing data corruption, they serve fundamentally opposite purposes.
+Redo logs ensure durability by preserving write operations during system
+crashes, whereas undo logs support transaction rollbacks and
+Multi-Version Concurrency Control (MVCC) by keeping track of previous
+data states.</p>
+<h2 id="what-is-a-redo-log">What is a Redo Log?</h2>
+<p>The redo log is a disk-based data structure used during crash
+recovery to correct data written by incomplete transactions. It enforces
+the <strong>Durability</strong> property of ACID (Atomicity,
+Consistency, Isolation, Durability) transactions.</p>
+<h3 id="architecture-and-write-mechanism">Architecture and Write
+Mechanism</h3>
+<ul>
+<li><strong>Write-Ahead Logging (WAL):</strong> InnoDB uses the WAL
+protocol. When a transaction modifies data, the changes are first
+written to the in-memory redo log buffer and then flushed to the redo
+log files on disk before the actual data pages in the buffer pool are
+updated on disk.</li>
+<li><strong>Physical Logging:</strong> Redo logs record physical changes
+at the storage page level. They contain low-level instructions
+representing exactly which bytes in which data pages were modified.</li>
+<li><strong>Storage Structure:</strong> Redo logs are stored as a set of
+fixed-size files (usually named <code>ib_logfile0</code> and
+<code>ib_logfile1</code>) written in a circular fashion. Once the log
+writer reaches the end of the last file, it wraps around to the
+beginning, overwriting old data that has already been safely flushed to
+the main database tablespace.</li>
+</ul>
+<hr />
+<h2 id="what-is-an-undo-log">What is an Undo Log?</h2>
+<p>The undo log is a collection of log records associated with a single
+transaction. It is designed to roll back transactions and support
+consistent reads, fulfilling the <strong>Atomicity</strong> and
+<strong>Isolation</strong> aspects of ACID.</p>
+<h3 id="architecture-and-write-mechanism-1">Architecture and Write
+Mechanism</h3>
+<ul>
+<li><strong>Logical Logging:</strong> Unlike the physical nature of redo
+logs, undo logs are logical. They store instructions on how to reverse a
+transaction. For example, if a transaction performs an
+<code>INSERT</code>, the undo log records a corresponding
+<code>DELETE</code>. If a transaction performs an <code>UPDATE</code>,
+the undo log stores the old values of the modified columns.</li>
+<li><strong>Multi-Version Concurrency Control (MVCC):</strong> Undo logs
+allow other transactions to read the consistent, older state of modified
+rows without locking them. When a query requests a row currently being
+modified, InnoDB uses the undo log to reconstruct the older version of
+the record.</li>
+<li><strong>Storage Structure:</strong> Undo logs are stored within undo
+segments located in undo tablespaces. Unlike the circular, fixed-size
+design of redo logs, undo logs grow dynamically. They are only purged by
+background "purge threads" when they are no longer needed by any active
+transactions for rollback or MVCC purposes.</li>
+</ul>
+<hr />
+<h2 id="architectural-comparison">Architectural Comparison</h2>
+<p>To clearly understand how these two log systems compare, we can
+examine their distinct technical attributes:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Feature</th>
+<th style="text-align: left;">Redo Log</th>
+<th style="text-align: left;">Undo Log</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>ACID Property</strong></td>
+<td style="text-align: left;">Durability</td>
+<td style="text-align: left;">Atomicity and Isolation</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Log Type</strong></td>
+<td style="text-align: left;">Physical (block-level modifications)</td>
+<td style="text-align: left;">Logical (SQL-reversing operations)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Primary Purpose</strong></td>
+<td style="text-align: left;">Recovery of committed data after a
+crash</td>
+<td style="text-align: left;">Rollback of active transactions and MVCC
+reads</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Write Pattern</strong></td>
+<td style="text-align: left;">Sequential write to circular files</td>
+<td style="text-align: left;">Dynamic allocation within undo
+tablespaces</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Data Kept Until</strong></td>
+<td style="text-align: left;">Data pages are flushed to disk</td>
+<td style="text-align: left;">No active transactions need the
+history</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Operation Type</strong></td>
+<td style="text-align: left;">Replays changes forward</td>
+<td style="text-align: left;">Reverts changes backward</td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-redo-and-undo-logs-work-together">How Redo and Undo Logs
+Work Together</h2>
+<p>When a transaction executes in MySQL, both logs work in tandem to
+ensure system stability.</p>
+<p>For instance, when a row is updated:</p>
+<ol type="1">
+<li>InnoDB writes the old state of the row to the <strong>undo
+log</strong> (to allow rollback or read-consistency).</li>
+<li>The changes to the data page and the undo log page are written to
+the <strong>redo log</strong> (to ensure these modifications survive a
+crash).</li>
+<li>The changes are made in the buffer pool.</li>
+<li>When the transaction commits, the redo log buffer is flushed to
+disk, guaranteeing the transaction is permanent.</li>
+<li>If the system crashes before the modified data pages reach the disk,
+MySQL uses the <strong>redo log</strong> to reconstruct the state. If a
+transaction was interrupted and never committed, MySQL uses the
+<strong>undo log</strong> to revert those partial changes.</li>
+</ol></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

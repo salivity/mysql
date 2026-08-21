@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Block Nested Loop Join Explained - mysql</title>
+    <meta name="description" content="This article provides a comprehensive overview of the Block Nested Loop (BNL) join algorithm in MySQL, detailing how it optimizes database queries. It covers the core mechanics of the algorithm, how the join buffer is utilized to minimize disk I/O, and t">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-block-nested-loop-join-explained">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Block Nested Loop Join Explained - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-block-nested-loop-join-explained" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article provides a comprehensive overview of the Block Nested Loop (BNL) join algorithm in MySQL, detailing how it optimizes database queries. It covers the core mechanics of the algorithm, how the join buffer is utilized to minimize disk I/O, and t" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-block-nested-loop-join-explained">MySQL Block Nested Loop
+Join Explained</h1>
+<p>This article provides a comprehensive overview of the Block Nested
+Loop (BNL) join algorithm in MySQL, detailing how it optimizes database
+queries. It covers the core mechanics of the algorithm, how the join
+buffer is utilized to minimize disk I/O, and the step-by-step process
+MySQL uses to execute joins when indexes are unavailable.</p>
+<h3 id="the-problem-with-simple-nested-loop-joins">The Problem with
+Simple Nested Loop Joins</h3>
+<p>To understand the Block Nested Loop algorithm, it is first necessary
+to understand the Simple Nested Loop Join (SNLJ). In a simple nested
+loop join, MySQL reads one row at a time from the outer table (first
+table), scans the entire inner table (second table) for matching rows,
+and repeats this process for every single row in the outer table.</p>
+<p>If the outer table has 1,000 rows and the inner table has 10,000
+rows, MySQL must read the inner table 1,000 times, resulting in
+10,000,000 row comparisons and massive disk I/O if the inner table
+cannot fit into memory. This becomes highly inefficient when the join
+columns lack indexes.</p>
+<h3 id="how-block-nested-loop-optimizes-joins">How Block Nested Loop
+Optimizes Joins</h3>
+<p>The Block Nested Loop algorithm reduces the number of times the inner
+table needs to be scanned by using an in-memory buffer called the
+<strong>join buffer</strong>. Instead of scanning the inner table for
+every individual row of the outer table, BNL processes the outer table
+rows in batches or "blocks."</p>
+<p>Here is the step-by-step operational mechanism of the BNL
+algorithm:</p>
+<ol type="1">
+<li><strong>Join Buffer Allocation:</strong> MySQL allocates a portion
+of memory defined by the <code>join_buffer_size</code> system
+variable.</li>
+<li><strong>Buffering Outer Rows:</strong> MySQL reads rows from the
+outer table and writes the selected columns into the join buffer. It
+continues this process until the buffer is full or all eligible rows
+from the outer table are read.</li>
+<li><strong>Scanning the Inner Table:</strong> Once the join buffer is
+filled with a block of outer rows, MySQL performs a single, full scan of
+the inner table.</li>
+<li><strong>In-Memory Matching:</strong> For each row read from the
+inner table, MySQL compares it against all the outer rows currently
+stored in the join buffer. Because this comparison happens entirely in
+RAM, it is exceptionally fast.</li>
+<li><strong>Iteration:</strong> If there are still unprocessed rows in
+the outer table, MySQL clears the join buffer, loads the next batch of
+outer rows, and performs another scan of the inner table. This cycle
+repeats until all rows from the outer table have been processed.</li>
+</ol>
+<h3 id="the-impact-on-performance">The Impact on Performance</h3>
+<p>By grouping the outer rows into a buffer, the number of scans on the
+inner table is drastically reduced.</p>
+<p>For example, if the join buffer can hold 100 rows of the outer table
+at a time, MySQL only needs to scan the inner table 10 times instead of
+1,000 times. This reduction in disk I/O leads to significant performance
+improvements for queries that must perform full table scans on
+non-indexed columns.</p>
+<h3 id="key-configuration-and-limitations">Key Configuration and
+Limitations</h3>
+<ul>
+<li><strong>The <code>join_buffer_size</code> Variable:</strong> The
+efficiency of the BNL join is directly tied to the size of the join
+buffer. If the buffer is too small, MySQL must perform more frequent
+scans of the inner table. Conversely, setting it too high can lead to
+excessive memory consumption, as a join buffer is allocated for each
+query that requires one.</li>
+<li><strong>Column Selection:</strong> MySQL only buffers the columns
+actually needed for the query (the columns in the SELECT, WHERE, and
+JOIN clauses), not the entire row. This allows more rows to fit into the
+buffer.</li>
+<li><strong>Modern MySQL Context:</strong> While BNL was the default
+optimization for non-indexed joins for many years, MySQL 8.0.18 and
+later introduced Hash Joins. In modern MySQL installations, Hash Joins
+have largely replaced BNL because they are generally faster and more
+memory-efficient for equi-joins.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

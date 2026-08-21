@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How MySQL Uses Resource Groups to Manage CPU - mysql</title>
+    <meta name="description" content="MySQL manages CPU resources for specific threads through a feature called Resource Groups. This article provides an overview of how MySQL administrators can create, configure, and assign resource groups to regulate the CPU affinity and thread priority of">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-mysql-uses-resource-groups-to-manage-cpu">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How MySQL Uses Resource Groups to Manage CPU - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-mysql-uses-resource-groups-to-manage-cpu" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="MySQL manages CPU resources for specific threads through a feature called Resource Groups. This article provides an overview of how MySQL administrators can create, configure, and assign resource groups to regulate the CPU affinity and thread priority of" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-mysql-uses-resource-groups-to-manage-cpu">How MySQL Uses
+Resource Groups to Manage CPU</h1>
+<p>MySQL manages CPU resources for specific threads through a feature
+called Resource Groups. This article provides an overview of how MySQL
+administrators can create, configure, and assign resource groups to
+regulate the CPU affinity and thread priority of different database
+workloads, ensuring critical queries receive the necessary processing
+power while background tasks are constrained.</p>
+<h3 id="understanding-mysql-resource-groups">Understanding MySQL
+Resource Groups</h3>
+<p>Resource groups allow for the isolation and prioritization of
+workloads within a MySQL instance. By default, MySQL comes with two
+global resource groups:</p>
+<ul>
+<li><strong><code>SYS_default</code></strong>: Used for system threads
+(e.g., background page flushing, master threads).</li>
+<li><strong><code>USR_default</code></strong>: Used for user connection
+threads.</li>
+</ul>
+<p>Administrators can define custom resource groups to segregate
+traffic, such as separating high-priority transactional queries from
+low-priority analytical reports.</p>
+<h3 id="key-attributes-of-resource-groups">Key Attributes of Resource
+Groups</h3>
+<p>Each resource group is defined by two primary attributes that dictate
+how the operating system schedules its threads:</p>
+<ol type="1">
+<li><strong>VCPU (Virtual CPU) Affinity</strong>: This determines which
+CPU cores the threads in the resource group can execute on. It is
+specified as a list or range of CPU IDs (e.g., <code>VCPU = 0-3</code>
+or <code>VCPU = 0,2</code>).</li>
+<li><strong>Thread Priority</strong>: This determines the execution
+priority of the threads. The priority range depends on the group type:
+<ul>
+<li><strong>SYSTEM groups</strong>: Priority ranges from -20 (highest
+priority) to 0.</li>
+<li><strong>USER groups</strong>: Priority ranges from 0 to 19 (lowest
+priority).</li>
+</ul></li>
+</ol>
+<h3 id="creating-and-managing-resource-groups">Creating and Managing
+Resource Groups</h3>
+<p>You can manage resource groups using standard SQL statements. The
+database administrator must have the <code>RESOURCE_GROUP_ADMIN</code>
+privilege to execute these commands.</p>
+<p>To create a resource group that restricts user queries to specific
+CPU cores with a specific priority, use the
+<code>CREATE RESOURCE GROUP</code> statement:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">RESOURCE</span> <span class="kw">GROUP</span> batch_processing</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">TYPE</span> <span class="op">=</span> <span class="fu">USER</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  VCPU <span class="op">=</span> <span class="dv">4</span><span class="op">-</span><span class="dv">7</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  THREAD_PRIORITY <span class="op">=</span> <span class="dv">10</span>;</span></code></pre></div>
+<p>To modify an existing resource group, use the
+<code>ALTER RESOURCE GROUP</code> statement:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">RESOURCE</span> <span class="kw">GROUP</span> batch_processing</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  VCPU <span class="op">=</span> <span class="dv">4</span><span class="op">-</span><span class="dv">5</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  THREAD_PRIORITY <span class="op">=</span> <span class="dv">15</span>;</span></code></pre></div>
+<p>To delete a group, use <code>DROP RESOURCE GROUP</code>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">DROP</span> <span class="kw">RESOURCE</span> <span class="kw">GROUP</span> batch_processing;</span></code></pre></div>
+<h3 id="assigning-threads-to-resource-groups">Assigning Threads to
+Resource Groups</h3>
+<p>Once a resource group is created, MySQL threads can be assigned to it
+in three ways:</p>
+<h4 id="1-assigning-an-active-session-thread">1. Assigning an Active
+Session Thread</h4>
+<p>You can assign a specific connection's thread ID to a resource group
+using the <code>SET RESOURCE GROUP</code> statement:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> <span class="kw">RESOURCE</span> <span class="kw">GROUP</span> batch_processing <span class="cf">FOR</span> <span class="dv">123</span>;</span></code></pre></div>
+<p><em>(Where <code>123</code> is the thread ID obtained from the
+<code>Performance Schema</code> or <code>SHOW PROCESSLIST</code>
+tables).</em></p>
+<h4 id="2-assigning-the-current-session">2. Assigning the Current
+Session</h4>
+<p>To assign your current active database session to a resource
+group:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> <span class="kw">RESOURCE</span> <span class="kw">GROUP</span> batch_processing;</span></code></pre></div>
+<h4 id="3-using-optimizer-hints-for-specific-queries">3. Using Optimizer
+Hints for Specific Queries</h4>
+<p>For granular control, you can apply an optimizer hint to execute a
+single query within a specific resource group. This is highly effective
+for heavy reporting queries that should not impact the main
+application:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="co">/*+ RESOURCE_GROUP(batch_processing) */</span> customer_id, <span class="fu">SUM</span>(amount)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> sales</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> customer_id;</span></code></pre></div>
+<h3 id="how-mysql-implements-resource-allocation-under-the-hood">How
+MySQL Implements Resource Allocation Under the Hood</h3>
+<p>MySQL relies on the underlying operating system's thread-scheduling
+APIs to enforce resource group attributes.</p>
+<p>On Linux platforms, MySQL maps the <code>VCPU</code> attribute to the
+thread CPU affinity mask using the <code>sched_setaffinity()</code>
+system call. The <code>THREAD_PRIORITY</code> attribute is mapped to the
+thread "nice" value using the <code>setpriority()</code> system
+call.</p>
+<p>Because adjusting thread priorities and affinities requires specific
+operating system privileges, the MySQL system user must have the
+<code>CAP_SYS_NICE</code> capability enabled on Linux systems to fully
+utilize these scheduling features.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

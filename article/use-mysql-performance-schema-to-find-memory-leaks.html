@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Use MySQL Performance Schema to Find Memory Leaks - mysql</title>
+    <meta name="description" content="MySQL can sometimes experience unexpected memory growth, which often points to memory leaks within the database server, its storage engines, or installed plugins. This article provides a straightforward, step-by-step guide on how to enable, configure, an">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/use-mysql-performance-schema-to-find-memory-leaks">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Use MySQL Performance Schema to Find Memory Leaks - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/use-mysql-performance-schema-to-find-memory-leaks" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="MySQL can sometimes experience unexpected memory growth, which often points to memory leaks within the database server, its storage engines, or installed plugins. This article provides a straightforward, step-by-step guide on how to enable, configure, an" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="use-mysql-performance-schema-to-find-memory-leaks">Use MySQL
+Performance Schema to Find Memory Leaks</h1>
+<p>MySQL can sometimes experience unexpected memory growth, which often
+points to memory leaks within the database server, its storage engines,
+or installed plugins. This article provides a straightforward,
+step-by-step guide on how to enable, configure, and query the MySQL
+Performance Schema to track memory allocations over time, analyze usage
+patterns, and successfully pinpoint the source of memory leaks.</p>
+<h2 id="step-1-enable-the-performance-schema">Step 1: Enable the
+Performance Schema</h2>
+<p>The Performance Schema must be enabled at the global level. It is
+enabled by default in MySQL 5.7 and 8.0, but you should verify its
+status.</p>
+<p>Run the following query to check if it is active:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>SHOW VARIABLES <span class="kw">LIKE</span> <span class="st">&#39;performance_schema&#39;</span>;</span></code></pre></div>
+<p>If the value is <code>OFF</code>, you must enable it in your MySQL
+configuration file (<code>my.cnf</code> or <code>my.ini</code>) under
+the <code>[mysqld]</code> section and restart the server:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">performance_schema </span><span class="ot">=</span><span class="st"> </span><span class="kw">ON</span></span></code></pre></div>
+<h2 id="step-2-enable-memory-instrumentation">Step 2: Enable Memory
+Instrumentation</h2>
+<p>By default, MySQL does not enable all memory instruments to save
+resources. To track memory leaks, you must explicitly enable the memory
+instrumentation thread.</p>
+<p>Run this SQL statement to enable all memory-related instruments:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> performance_schema.setup_instruments </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> ENABLED <span class="op">=</span> <span class="st">&#39;YES&#39;</span>, TIMED <span class="op">=</span> <span class="st">&#39;YES&#39;</span> </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> NAME <span class="kw">LIKE</span> <span class="st">&#39;memory/%&#39;</span>;</span></code></pre></div>
+<p>To make sure these settings persist across restarts, you can add the
+following line to your <code>my.cnf</code> file:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dt">performance-schema-instrument </span><span class="ot">=</span><span class="st"> &#39;memory/%=COUNTED&#39;</span></span></code></pre></div>
+<h2 id="step-3-query-memory-usage-tables">Step 3: Query Memory Usage
+Tables</h2>
+<p>The Performance Schema stores memory allocation data in several
+summary tables. The most useful table for a quick overview is
+<code>memory_summary_global_by_event_name</code>.</p>
+<p>To see which event names are currently consuming the most memory,
+run:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    EVENT_NAME,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    COUNT_ALLOC,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    COUNT_FREE,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    CURRENT_NUMBER_OF_BYTES_USED,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    HIGH_NUMBER_OF_BYTES_USED</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> performance_schema.memory_summary_global_by_event_name</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> CURRENT_NUMBER_OF_BYTES_USED <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> CURRENT_NUMBER_OF_BYTES_USED <span class="kw">DESC</span>;</span></code></pre></div>
+<h3 id="key-columns-to-analyze">Key Columns to Analyze:</h3>
+<ul>
+<li><strong><code>EVENT_NAME</code></strong>: The specific internal
+MySQL instrument allocating the memory (e.g.,
+<code>memory/innodb/buf_buf_pool</code> or
+<code>memory/sql/TABLE</code>).</li>
+<li><strong><code>COUNT_ALLOC</code></strong>: The total number of
+memory allocation requests.</li>
+<li><strong><code>COUNT_FREE</code></strong>: The total number of memory
+release requests.</li>
+<li><strong><code>CURRENT_NUMBER_OF_BYTES_USED</code></strong>: The
+amount of memory currently allocated by this instrument.</li>
+</ul>
+<p>Alternatively, if you have the <code>sys</code> schema installed, you
+can run a more readable query:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> event_name, current_alloc, total_allocated</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> sys.memory_global_by_current_bytes</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">10</span>;</span></code></pre></div>
+<h2 id="step-4-identify-the-memory-leak">Step 4: Identify the Memory
+Leak</h2>
+<p>A memory leak is characterized by a continuous increase in memory
+consumption that is never released. To prove a leak exists and identify
+its source, you must monitor the metrics over time.</p>
+<ol type="1">
+<li><strong>Take a Baseline:</strong> Run the query in Step 3 when the
+database is in a normal state or shortly after startup. Record the
+<code>COUNT_ALLOC</code>, <code>COUNT_FREE</code>, and
+<code>CURRENT_NUMBER_OF_BYTES_USED</code> values.</li>
+<li><strong>Monitor During Growth:</strong> Run the query again when you
+notice overall system memory rising.</li>
+<li><strong>Analyze the Difference:</strong> Look for instruments where:
+<ul>
+<li><code>COUNT_ALLOC</code> is steadily increasing.</li>
+<li><code>COUNT_FREE</code> is lagging far behind
+<code>COUNT_ALLOC</code>.</li>
+<li><code>CURRENT_NUMBER_OF_BYTES_USED</code> continues to grow and
+never drops, even after client connections are closed or workload
+decreases.</li>
+</ul></li>
+</ol>
+<p>Common culprits often include specific user-defined functions (UDFs),
+third-party plugins, or query-cache allocations under specific heavy
+workloads. Once you identify the leaking <code>EVENT_NAME</code>, you
+can search the MySQL bug database or documentation for known issues
+related to that specific subsystem.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

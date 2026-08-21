@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Generated Columns in MySQL - mysql</title>
+    <meta name="description" content="Generated columns in MySQL allow database administrators and developers to store computed values automatically without manually updating them. This article explains how generated columns work, the differences between virtual and stored types, and how the">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/understanding-generated-columns-in-mysql">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Understanding Generated Columns in MySQL - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/understanding-generated-columns-in-mysql" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="Generated columns in MySQL allow database administrators and developers to store computed values automatically without manually updating them. This article explains how generated columns work, the differences between virtual and stored types, and how the" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="understanding-generated-columns-in-mysql">Understanding
+Generated Columns in MySQL</h1>
+<p>Generated columns in MySQL allow database administrators and
+developers to store computed values automatically without manually
+updating them. This article explains how generated columns work, the
+differences between virtual and stored types, and how they improve query
+performance and data integrity in a database schema.</p>
+<h2 id="what-is-a-generated-column">What is a Generated Column?</h2>
+<p>A generated column is a column whose value is automatically
+calculated from an expression rather than being directly inserted or
+updated by a user. The expression can reference other columns in the
+same table, allowing the database to maintain derived data
+automatically.</p>
+<p>For example, if a table has columns for <code>price</code> and
+<code>quantity</code>, a generated column can automatically calculate
+the <code>total_cost</code> using the expression
+<code>price * quantity</code>.</p>
+<h2 id="types-of-generated-columns">Types of Generated Columns</h2>
+<p>MySQL supports two types of generated columns, which differ in how
+they are stored and processed:</p>
+<h3 id="1-virtual-generated-columns-virtual">1. Virtual Generated
+Columns (VIRTUAL)</h3>
+<ul>
+<li><strong>Storage:</strong> Values are not stored on the disk.
+Instead, MySQL calculates the value on the fly whenever the row is
+read.</li>
+<li><strong>Performance:</strong> Saves disk space but requires CPU
+resources to compute the value during query execution.</li>
+<li><strong>Use Case:</strong> Ideal for columns that are queried
+infrequently or when disk space is a primary constraint. Virtual columns
+can also be indexed in MySQL.</li>
+</ul>
+<h3 id="2-stored-generated-columns-stored">2. Stored Generated Columns
+(STORED)</h3>
+<ul>
+<li><strong>Storage:</strong> Values are calculated when a row is
+inserted or updated, and the resulting value is physically stored on the
+disk.</li>
+<li><strong>Performance:</strong> Consumes disk space but offers faster
+read performance because the database does not need to recalculate the
+value during a <code>SELECT</code> query.</li>
+<li><strong>Use Case:</strong> Best for columns that are frequently
+queried, ordered, or used in complex joins where recalculation costs
+would degrade performance.</li>
+</ul>
+<h2 id="key-benefits-of-generated-columns">Key Benefits of Generated
+Columns</h2>
+<p>Integrating generated columns into a MySQL schema provides several
+distinct advantages:</p>
+<ul>
+<li><strong>Simplified Application Logic:</strong> Developers do not
+need to write code to calculate and update derived values. MySQL handles
+this automatically at the database level.</li>
+<li><strong>Guaranteed Data Integrity:</strong> Since the database
+engine computes the values, there is no risk of out-of-sync or
+mismatched data caused by application bugs.</li>
+<li><strong>Indexing JSON Data:</strong> MySQL allows you to create
+virtual generated columns that extract specific values from a JSON
+document. By indexing these generated columns, you can significantly
+speed up queries on JSON data.</li>
+<li><strong>Query Optimization:</strong> You can create indexes on
+generated columns, which enables the MySQL optimizer to use these
+indexes even if the query filters on the underlying expression rather
+than the generated column itself.</li>
+</ul>
+<h2 id="syntax-example">Syntax Example</h2>
+<p>To define a generated column, use the
+<code>GENERATED ALWAYS AS</code> clause in your
+<code>CREATE TABLE</code> or <code>ALTER TABLE</code> statement:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> products (</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> <span class="dt">INT</span> AUTO_INCREMENT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    price <span class="dt">DECIMAL</span>(<span class="dv">10</span>, <span class="dv">2</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    discount <span class="dt">DECIMAL</span>(<span class="dv">3</span>, <span class="dv">2</span>) <span class="kw">DEFAULT</span> <span class="fl">0.00</span>,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    discounted_price <span class="dt">DECIMAL</span>(<span class="dv">10</span>, <span class="dv">2</span>) <span class="kw">GENERATED</span> ALWAYS <span class="kw">AS</span> (price <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> discount)) STORED</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<p>In this schema, whenever a row is inserted or updated, MySQL
+automatically calculates the <code>discounted_price</code> and stores it
+physically on the disk.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

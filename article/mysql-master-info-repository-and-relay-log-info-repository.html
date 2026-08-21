@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL master_info_repository and relay_log_info_repository - mysql</title>
+    <meta name="description" content="This article explains the purpose of the masterinforepository and relayloginforepository system variables in MySQL replication. It covers what these settings do, the differences between their storage options, and why configuring them correctly is critica">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-master-info-repository-and-relay-log-info-repository">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL master_info_repository and relay_log_info_repository - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-master-info-repository-and-relay-log-info-repository" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains the purpose of the masterinforepository and relayloginforepository system variables in MySQL replication. It covers what these settings do, the differences between their storage options, and why configuring them correctly is critica" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1
+id="mysql-master_info_repository-and-relay_log_info_repository">MySQL
+master_info_repository and relay_log_info_repository</h1>
+<p>This article explains the purpose of the
+<code>master_info_repository</code> and
+<code>relay_log_info_repository</code> system variables in MySQL
+replication. It covers what these settings do, the differences between
+their storage options, and why configuring them correctly is critical
+for maintaining database crash safety.</p>
+<p>In MySQL replication, a replica needs to keep track of its progress
+to know where it stands relative to the source database. The
+<code>master_info_repository</code> and
+<code>relay_log_info_repository</code> settings determine where the
+replication metadata and status details are stored on the replica.</p>
+<h3 id="what-is-master_info_repository">What is
+master_info_repository?</h3>
+<p>The <code>master_info_repository</code> setting determines where the
+replica stores information about its connection to the source (master)
+server. This metadata includes:</p>
+<ul>
+<li>Hostname and port of the source.</li>
+<li>Replication login credentials.</li>
+<li>The current binary log file and position that the replica's I/O
+thread has read from the source.</li>
+</ul>
+<p>Historically, this information was stored in a file named
+<code>master.info</code> in the data directory.</p>
+<h3 id="what-is-relay_log_info_repository">What is
+relay_log_info_repository?</h3>
+<p>The <code>relay_log_info_repository</code> setting determines where
+the replica stores execution progress status. This metadata
+includes:</p>
+<ul>
+<li>The relay log files and positions that have been executed by the
+replica's SQL thread.</li>
+<li>The corresponding binary log file and position on the source
+server.</li>
+</ul>
+<p>Historically, this information was stored in a file named
+<code>relay-log.info</code> in the data directory.</p>
+<h3 id="storage-options-file-vs-table">Storage Options: FILE vs.
+TABLE</h3>
+<p>Both parameters can be configured to use one of two storage
+types:</p>
+<ol type="1">
+<li><strong><code>FILE</code></strong>: Metadata is written to
+traditional text files (<code>master.info</code> and
+<code>relay-log.info</code>).</li>
+<li><strong><code>TABLE</code></strong>: Metadata is written to
+transactional InnoDB tables in the system database:
+<code>mysql.slave_master_info</code> and
+<code>mysql.slave_relay_log_info</code>.</li>
+</ol>
+<h3 id="the-importance-of-table-based-repositories-for-crash-safety">The
+Importance of Table-Based Repositories for Crash Safety</h3>
+<p>The primary reason to configure these repositories is to ensure
+<strong>crash safety</strong>.</p>
+<p>When repositories are set to <code>FILE</code>, the replication state
+updates are not synchronized atomically with the data changes written to
+the database. If the replica server crashes unexpectedly, the files on
+disk may not match the actual state of the databases. This can result in
+replication lag, duplicate key errors, or missing data upon recovery
+because the replica may attempt to re-read or re-apply transactions it
+has already processed.</p>
+<p>When repositories are set to <code>TABLE</code> (and the tables use
+the InnoDB engine), the updates to the replication state tables occur
+within the same transaction as the data updates. If the server crashes,
+the replication progress is rolled back or committed atomically along
+with the data. This guarantees that when the replica restarts, it
+resumes replication from the exact transaction where it left off,
+preventing data inconsistency.</p>
+<h3 id="modern-mysql-recommendations">Modern MySQL Recommendations</h3>
+<p>In MySQL 5.7, the default value for these settings was
+<code>FILE</code>, making it a best practice to manually change them to
+<code>TABLE</code>.</p>
+<p>In MySQL 8.0, the default was changed to <code>TABLE</code>.
+Furthermore, in MySQL 8.0.23 and later, these settings have been
+deprecated, and the file-based repositories are no longer supported in
+newer releases, making transactional, table-based replication metadata
+storage the default standard.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

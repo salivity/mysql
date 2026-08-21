@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Securely Install MySQL on Linux - mysql</title>
+    <meta name="description" content="Securing a MySQL database is critical for protecting sensitive data from unauthorized access, breaches, and potential exploits. This guide provides a step-by-step walkthrough for performing a secure installation of MySQL on a Linux server. It covers upda">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-to-securely-install-mysql-on-linux">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How to Securely Install MySQL on Linux - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-to-securely-install-mysql-on-linux" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="Securing a MySQL database is critical for protecting sensitive data from unauthorized access, breaches, and potential exploits. This guide provides a step-by-step walkthrough for performing a secure installation of MySQL on a Linux server. It covers upda" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-to-securely-install-mysql-on-linux">How to Securely Install
+MySQL on Linux</h1>
+<p>Securing a MySQL database is critical for protecting sensitive data
+from unauthorized access, breaches, and potential exploits. This guide
+provides a step-by-step walkthrough for performing a secure installation
+of MySQL on a Linux server. It covers updating system repositories,
+installing the MySQL package, running the built-in security script,
+configuring firewall rules, and implementing best practices for database
+user management.</p>
+<h2 id="step-1-update-the-system-package-repository">Step 1: Update the
+System Package Repository</h2>
+<p>Before installing any new software, update your system's package
+repository to ensure you are downloading the latest security patches and
+software versions.</p>
+<p>On Debian or Ubuntu systems:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt upgrade <span class="at">-y</span></span></code></pre></div>
+<p>On RHEL, CentOS, or Rocky Linux systems:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dnf update <span class="at">-y</span></span></code></pre></div>
+<h2 id="step-2-install-mysql-server">Step 2: Install MySQL Server</h2>
+<p>Install the official MySQL server package using your distribution's
+package manager.</p>
+<p>On Debian or Ubuntu:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install mysql-server <span class="at">-y</span></span></code></pre></div>
+<p>On RHEL, CentOS, or Rocky Linux:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dnf install mysql-server <span class="at">-y</span></span></code></pre></div>
+<p>Once the installation is complete, start the MySQL service and enable
+it to launch automatically upon system boot:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl start mysql</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable mysql</span></code></pre></div>
+<p><em>(Note: On RHEL-based systems, the service name may be
+<code>mysqld</code> instead of <code>mysql</code>.)</em></p>
+<h2 id="step-3-run-the-mysql-secure-installation-script">Step 3: Run the
+MySQL Secure Installation Script</h2>
+<p>MySQL includes a built-in security script that automates several
+essential hardening steps. Run this script by executing:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mysql_secure_installation</span></code></pre></div>
+<p>The script will prompt you to configure the following settings:</p>
+<ol type="1">
+<li><strong>VALIDATE PASSWORD COMPONENT</strong>: Enable this option to
+enforce strong password policies for all database users. Choose the
+level of validation (Low, Medium, or Strong) based on your security
+requirements.</li>
+<li><strong>Set Root Password</strong>: Define a strong password for the
+MySQL root administrative user.</li>
+<li><strong>Remove Anonymous Users</strong>: Disallow connections from
+anonymous users to ensure all connections require explicit
+authentication.</li>
+<li><strong>Disallow Root Login Remotely</strong>: Restrict the root
+user to local connections (<code>localhost</code>) only. This prevents
+attackers from attempting to brute-force the root password over the
+network.</li>
+<li><strong>Remove Test Database</strong>: Delete the default "test"
+database, which is accessible to anyone by default, along with any
+privileges associated with it.</li>
+<li><strong>Reload Privilege Tables</strong>: Apply the changes
+immediately.</li>
+</ol>
+<h2 id="step-4-configure-the-firewall">Step 4: Configure the
+Firewall</h2>
+<p>By default, MySQL listens on port 3306. To protect your database from
+external scanning and unauthorized connection attempts, configure your
+firewall to block public access to this port.</p>
+<p>If you require remote access, allow traffic only from specific,
+trusted IP addresses.</p>
+<p>On Ubuntu/Debian using UFW (Uncomplicated Firewall):</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Block all external access to port 3306 by default</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw deny 3306/tcp</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Allow access only from a specific trusted IP address</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow from trusted_ip_address to any port 3306 proto tcp</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw reload</span></code></pre></div>
+<p>On RHEL/Rocky Linux using Firewalld:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a rich rule to allow access only from a specific IP</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> firewall-cmd <span class="at">--permanent</span> <span class="at">--add-rich-rule</span><span class="op">=</span><span class="st">&#39;rule family=&quot;ipv4&quot; source address=&quot;trusted_ip_address&quot; port protocol=&quot;tcp&quot; port=&quot;3306&quot; accept&#39;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> firewall-cmd <span class="at">--reload</span></span></code></pre></div>
+<h2 id="step-5-implement-secure-user-management">Step 5: Implement
+Secure User Management</h2>
+<p>Never use the MySQL root account for daily application operations.
+Instead, create dedicated database users with restricted privileges
+tailored to their specific tasks.</p>
+<p>Log into the MySQL command line as root:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mysql <span class="at">-u</span> root <span class="at">-p</span></span></code></pre></div>
+<p>Create a new user with a strong password:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="fu">USER</span> <span class="st">&#39;app_user&#39;</span>@<span class="st">&#39;localhost&#39;</span> <span class="kw">IDENTIFIED</span> <span class="kw">BY</span> <span class="st">&#39;Strong_Password_Here&#39;</span>;</span></code></pre></div>
+<p>Grant only the minimum required privileges to the new user on the
+specific database:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">GRANT</span> <span class="kw">SELECT</span>, <span class="kw">INSERT</span>, <span class="kw">UPDATE</span>, <span class="kw">DELETE</span> <span class="kw">ON</span> target_database.<span class="op">*</span> <span class="kw">TO</span> <span class="st">&#39;app_user&#39;</span>@<span class="st">&#39;localhost&#39;</span>;</span></code></pre></div>
+<p>Flush the privileges to apply the changes and exit:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FLUSH</span> <span class="kw">PRIVILEGES</span>;</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>EXIT;</span></code></pre></div></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

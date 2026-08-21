@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure MySQL Master-Slave Replication - mysql</title>
+    <meta name="description" content="This guide provides a step-by-step walkthrough for configuring basic asynchronous master-slave (source-replica) replication in MySQL. You will learn how to configure the configuration files on both servers, create a dedicated replication user, synchroniz">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/configure-mysql-master-slave-replication">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Configure MySQL Master-Slave Replication - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/configure-mysql-master-slave-replication" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This guide provides a step-by-step walkthrough for configuring basic asynchronous master-slave (source-replica) replication in MySQL. You will learn how to configure the configuration files on both servers, create a dedicated replication user, synchroniz" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="configure-mysql-master-slave-replication">Configure MySQL
+Master-Slave Replication</h1>
+<p>This guide provides a step-by-step walkthrough for configuring basic
+asynchronous master-slave (source-replica) replication in MySQL. You
+will learn how to configure the configuration files on both servers,
+create a dedicated replication user, synchronize the initial data, and
+initiate the replication process to ensure real-time data copying from
+the master database to the slave.</p>
+<h2 id="step-1-configure-the-master-server">Step 1: Configure the Master
+Server</h2>
+<p>To act as a replication source, the master server must have a unique
+server ID and binary logging enabled.</p>
+<ol type="1">
+<li><p>Open the MySQL configuration file (usually
+<code>/etc/mysql/mysql.conf.d/mysqld.cnf</code> or
+<code>/etc/my.cnf</code>) on the master server:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> nano /etc/mysql/mysql.conf.d/mysqld.cnf</span></code></pre></div></li>
+<li><p>Add or uncomment the following lines in the <code>[mysqld]</code>
+section:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">server-id </span><span class="ot">=</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">log_bin </span><span class="ot">=</span><span class="st"> /var/log/mysql/mysql-bin.log</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">binlog_do_db </span><span class="ot">=</span><span class="st"> mydb  # Replace with the database you want to replicate (optional)</span></span></code></pre></div></li>
+<li><p>Save the file and restart the MySQL service to apply changes:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart mysql</span></code></pre></div></li>
+</ol>
+<h2 id="step-2-create-a-replication-user-on-the-master">Step 2: Create a
+Replication User on the Master</h2>
+<p>The slave server needs dedicated credentials to connect to the master
+and read the binary logs.</p>
+<ol type="1">
+<li><p>Log in to the master MySQL shell:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>mysql <span class="op">-</span>u root <span class="op">-</span>p</span></code></pre></div></li>
+<li><p>Create a new user and grant replication privileges. Replace
+<code>replica_user</code> and <code>password</code> with your desired
+credentials, and <code>slave_ip</code> with the actual IP address of
+your slave server:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="fu">USER</span> <span class="st">&#39;replica_user&#39;</span>@<span class="st">&#39;slave_ip&#39;</span> <span class="kw">IDENTIFIED</span> <span class="kw">WITH</span> mysql_native_password <span class="kw">BY</span> <span class="st">&#39;password&#39;</span>;</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">GRANT</span> REPLICATION SLAVE <span class="kw">ON</span> <span class="op">*</span>.<span class="op">*</span> <span class="kw">TO</span> <span class="st">&#39;replica_user&#39;</span>@<span class="st">&#39;slave_ip&#39;</span>;</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FLUSH</span> <span class="kw">PRIVILEGES</span>;</span></code></pre></div></li>
+<li><p>Keep the terminal open and obtain the current binary log
+coordinates by running:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>SHOW <span class="kw">MASTER</span> STATUS;</span></code></pre></div>
+<p>Note down the values in the <strong>File</strong> (e.g.,
+<code>mysql-bin.000001</code>) and <strong>Position</strong> (e.g.,
+<code>154</code>) columns. You will need these coordinates to configure
+the slave.</p></li>
+</ol>
+<h2 id="step-3-configure-the-slave-server">Step 3: Configure the Slave
+Server</h2>
+<p>The slave server requires a unique server ID to distinguish it from
+the master.</p>
+<ol type="1">
+<li><p>Open the MySQL configuration file on the slave server:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> nano /etc/mysql/mysql.conf.d/mysqld.cnf</span></code></pre></div></li>
+<li><p>Add the following lines under the <code>[mysqld]</code>
+section:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dt">server-id </span><span class="ot">=</span><span class="st"> </span><span class="dv">2</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">relay_log </span><span class="ot">=</span><span class="st"> /var/log/mysql/mysql-relay-bin.log</span></span></code></pre></div></li>
+<li><p>Save the file and restart the MySQL service:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart mysql</span></code></pre></div></li>
+</ol>
+<h2 id="step-4-import-existing-data-if-applicable">Step 4: Import
+Existing Data (If Applicable)</h2>
+<p>If your master database already contains data, export it from the
+master and import it into the slave before starting replication to
+ensure both databases start with identical datasets.</p>
+<ol type="1">
+<li><p>On the master server, dump the database:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysqldump</span> <span class="at">-u</span> root <span class="at">-p</span> <span class="at">--opt</span> <span class="at">--skip-lock-tables</span> <span class="at">--single-transaction</span> <span class="at">--databases</span> mydb <span class="op">&gt;</span> mydb.sql</span></code></pre></div></li>
+<li><p>Transfer the dump file to the slave server and import it:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-u</span> root <span class="at">-p</span> <span class="op">&lt;</span> mydb.sql</span></code></pre></div></li>
+</ol>
+<h2 id="step-5-start-replication-on-the-slave">Step 5: Start Replication
+on the Slave</h2>
+<p>Link the slave server to the master using the credentials and log
+coordinates obtained in Step 2.</p>
+<ol type="1">
+<li><p>Log in to the slave MySQL shell:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>mysql <span class="op">-</span>u root <span class="op">-</span>p</span></code></pre></div></li>
+<li><p>Configure the connection parameters (for MySQL 8.0.22+, you can
+use <code>CHANGE REPLICATION SOURCE TO</code> instead of
+<code>CHANGE MASTER TO</code>):</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CHANGE</span> <span class="kw">MASTER</span> <span class="kw">TO</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  MASTER_HOST<span class="op">=</span><span class="st">&#39;master_ip&#39;</span>,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  MASTER_USER<span class="op">=</span><span class="st">&#39;replica_user&#39;</span>,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  MASTER_PASSWORD<span class="op">=</span><span class="st">&#39;password&#39;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  MASTER_LOG_FILE<span class="op">=</span><span class="st">&#39;mysql-bin.000001&#39;</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  MASTER_LOG_POS<span class="op">=</span><span class="dv">154</span>;</span></code></pre></div></li>
+<li><p>Start the replication process:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">START</span> SLAVE;</span></code></pre></div>
+<p><em>(Note: For MySQL 8.0.22+, the command <code>START REPLICA;</code>
+can also be used).</em></p></li>
+</ol>
+<h2 id="step-6-verify-replication-status">Step 6: Verify Replication
+Status</h2>
+<p>Ensure that the replication process is running smoothly without
+errors.</p>
+<ol type="1">
+<li><p>Run the following command on the slave MySQL shell:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>SHOW SLAVE STATUS\G</span></code></pre></div>
+<p><em>(Note: For MySQL 8.0.22+, use
+<code>SHOW REPLICA STATUS\G</code>).</em></p></li>
+<li><p>Look for the following parameters in the output:</p>
+<ul>
+<li><strong>Slave_IO_Running:</strong> Yes</li>
+<li><strong>Slave_SQL_Running:</strong> Yes</li>
+<li><strong>Last_IO_Error / Last_SQL_Error:</strong> Should be
+empty.</li>
+</ul></li>
+</ol>
+<p>If both running states are set to "Yes", your basic asynchronous
+MySQL master-slave replication is successfully configured and
+active.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

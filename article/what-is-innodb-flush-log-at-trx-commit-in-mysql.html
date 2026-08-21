@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What is innodb_flush_log_at_trx_commit in MySQL - mysql</title>
+    <meta name="description" content="This article explains the role of the innodbflushlogattrxcommit configuration parameter in MySQL, detailing how it balances ACID compliance and database performance. We will explore its three settings (0, 1, and 2), their impact on data durability, and h">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/what-is-innodb-flush-log-at-trx-commit-in-mysql">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="What is innodb_flush_log_at_trx_commit in MySQL - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/what-is-innodb-flush-log-at-trx-commit-in-mysql" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains the role of the innodbflushlogattrxcommit configuration parameter in MySQL, detailing how it balances ACID compliance and database performance. We will explore its three settings (0, 1, and 2), their impact on data durability, and h" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="what-is-innodb_flush_log_at_trx_commit-in-mysql">What is
+innodb_flush_log_at_trx_commit in MySQL</h1>
+<p>This article explains the role of the
+<code>innodb_flush_log_at_trx_commit</code> configuration parameter in
+MySQL, detailing how it balances ACID compliance and database
+performance. We will explore its three settings (0, 1, and 2), their
+impact on data durability, and how to choose the right value for your
+application's specific needs.</p>
+<h2 id="understanding-the-parameter">Understanding the Parameter</h2>
+<p>The <code>innodb_flush_log_at_trx_commit</code> parameter controls
+how strictly MySQL adheres to the Durability (the "D" in ACID) of
+transactions. Specifically, it dictates when transaction log buffer
+contents are written to the redo log file and when those files are
+flushed (synced) to physical disk storage.</p>
+<p>This setting represents a direct trade-off between write performance
+and data safety.</p>
+<h2 id="the-three-configuration-values">The Three Configuration
+Values</h2>
+<p>You can configure this parameter to one of three values:
+<code>0</code>, <code>1</code>, or <code>2</code>.</p>
+<h3 id="value-1-default-full-acid-compliance">Value 1 (Default: Full
+ACID Compliance)</h3>
+<ul>
+<li><strong>Behavior:</strong> The log buffer is written to the redo log
+file and flushed to disk at every transaction commit.</li>
+<li><strong>Data Safety:</strong> Highest. In the event of a MySQL
+crash, operating system crash, or power outage, no committed
+transactions are lost.</li>
+<li><strong>Performance:</strong> Lowest. Because every commit requires
+a synchronous disk write (fsync), disk I/O becomes a bottleneck.</li>
+</ul>
+<h3 id="value-0-maximum-performance">Value 0 (Maximum Performance)</h3>
+<ul>
+<li><strong>Behavior:</strong> The log buffer is written to the redo log
+file and flushed to disk once per second. Nothing happens at transaction
+commit.</li>
+<li><strong>Data Safety:</strong> Lowest. If the MySQL service crashes,
+the operating system crashes, or a power outage occurs, you can lose up
+to one second of committed transactions.</li>
+<li><strong>Performance:</strong> Highest. Transaction commits do not
+wait for disk I/O, allowing for very high write throughput.</li>
+</ul>
+<h3 id="value-2-balanced-compromise">Value 2 (Balanced Compromise)</h3>
+<ul>
+<li><strong>Behavior:</strong> The log buffer is written to the redo log
+file at every transaction commit, but the flush (sync) to disk occurs
+only once per second.</li>
+<li><strong>Data Safety:</strong> Medium. If the MySQL process crashes,
+no data is lost because the data was already written to the operating
+system cache. However, if the operating system crashes or there is a
+power outage, you can lose up to one second of transactions.</li>
+<li><strong>Performance:</strong> High. Writes to the operating system
+cache are memory-to-memory operations, making this setting significantly
+faster than <code>1</code>.</li>
+</ul>
+<h2 id="comparison-summary">Comparison Summary</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Value</th>
+<th style="text-align: left;">Write to OS Cache</th>
+<th style="text-align: left;">Flush to Physical Disk</th>
+<th style="text-align: left;">Data Loss Risk (MySQL Crash)</th>
+<th style="text-align: left;">Data Loss Risk (OS/Power Crash)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>0</strong></td>
+<td style="text-align: left;">Once per second</td>
+<td style="text-align: left;">Once per second</td>
+<td style="text-align: left;">Up to 1 second</td>
+<td style="text-align: left;">Up to 1 second</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>1</strong></td>
+<td style="text-align: left;">Every commit</td>
+<td style="text-align: left;">Every commit</td>
+<td style="text-align: left;">None</td>
+<td style="text-align: left;">None</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>2</strong></td>
+<td style="text-align: left;">Every commit</td>
+<td style="text-align: left;">Once per second</td>
+<td style="text-align: left;">None</td>
+<td style="text-align: left;">Up to 1 second</td>
+</tr>
+</tbody>
+</table>
+<h2 id="how-to-choose-the-right-setting">How to Choose the Right
+Setting</h2>
+<p>The optimal setting depends on your application's tolerance for data
+loss versus its performance requirements:</p>
+<ul>
+<li><strong>Use <code>1</code> (Default)</strong> for critical databases
+where data loss is unacceptable, such as financial transactions, user
+accounts, and e-commerce checkouts.</li>
+<li><strong>Use <code>2</code></strong> for applications that require
+high performance but can tolerate up to one second of data loss in the
+rare event of a total system failure (e.g., analytics, logging systems,
+or non-critical application states).</li>
+<li><strong>Use <code>0</code></strong> rarely, typically only for
+staging environments, temporary database instances, or data loading
+operations where speed is paramount and the data can be easily
+recreated.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

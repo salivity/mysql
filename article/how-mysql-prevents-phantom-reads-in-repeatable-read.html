@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How MySQL Prevents Phantom Reads in Repeatable Read - mysql</title>
+    <meta name="description" content="This article explains how phantom reads occur in database transactions and details the specific mechanisms MySQL's InnoDB storage engine uses to prevent them under the Repeatable Read isolation level. You will learn the difference between standard non-bl">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-mysql-prevents-phantom-reads-in-repeatable-read">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How MySQL Prevents Phantom Reads in Repeatable Read - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-mysql-prevents-phantom-reads-in-repeatable-read" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how phantom reads occur in database transactions and details the specific mechanisms MySQL's InnoDB storage engine uses to prevent them under the Repeatable Read isolation level. You will learn the difference between standard non-bl" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-mysql-prevents-phantom-reads-in-repeatable-read">How MySQL
+Prevents Phantom Reads in Repeatable Read</h1>
+<p>This article explains how phantom reads occur in database
+transactions and details the specific mechanisms MySQL's InnoDB storage
+engine uses to prevent them under the Repeatable Read isolation level.
+You will learn the difference between standard non-blocking reads and
+locking reads, and how Multi-Version Concurrency Control (MVCC) and
+Next-Key Locks work together to maintain data consistency.</p>
+<h2 id="what-is-a-phantom-read-and-how-does-it-occur">What is a Phantom
+Read and How Does It Occur?</h2>
+<p>A phantom read is a concurrency problem that occurs when a
+transaction executes the same query twice, but retrieve different sets
+of rows because another concurrent transaction has inserted or deleted
+rows in the interim.</p>
+<p>To understand how a phantom read occurs, consider the following
+sequence of events between two concurrent transactions, Transaction A
+and Transaction B:</p>
+<ol type="1">
+<li><strong>Transaction A</strong> executes a query to retrieve all
+users with an age greater than 30:
+<code>SELECT * FROM users WHERE age &gt; 30;</code> <em>(Result: 2 rows
+are returned).</em></li>
+<li><strong>Transaction B</strong> starts and inserts a new user into
+the table:
+<code>INSERT INTO users (name, age) VALUES ('Alice', 35);</code></li>
+<li><strong>Transaction B</strong> commits its changes.</li>
+<li><strong>Transaction A</strong> runs the exact same query again:
+<code>SELECT * FROM users WHERE age &gt; 30;</code> <em>(Result: 3 rows
+are returned).</em></li>
+</ol>
+<p>The newly inserted row ('Alice') is the "phantom" row. Even though
+Transaction A is supposed to have a consistent view of the database, it
+sees a row that did not exist when it started.</p>
+<h2 id="how-mysql-prevents-phantom-reads-in-repeatable-read-1">How MySQL
+Prevents Phantom Reads in Repeatable Read</h2>
+<p>According to the SQL-92 standard, the Repeatable Read isolation level
+is only required to prevent dirty reads and non-repeatable reads; it is
+allowed to experience phantom reads. However, MySQL’s default storage
+engine, InnoDB, goes a step further. It prevents phantom reads in the
+Repeatable Read isolation level using two distinct mechanisms depending
+on the type of query being executed: <strong>MVCC</strong> for
+consistent (non-locking) reads, and <strong>Next-Key Locking</strong>
+for locking reads.</p>
+<h3 id="1-consistent-non-locking-reads-using-mvcc">1. Consistent
+Non-Locking Reads (Using MVCC)</h3>
+<p>For standard <code>SELECT</code> statements, MySQL uses Multi-Version
+Concurrency Control (MVCC) to prevent phantom reads without locking the
+database rows.</p>
+<p>When Transaction A starts and performs its first <code>SELECT</code>
+query, InnoDB creates a <strong>Read View</strong> (a snapshot of the
+database state at that exact moment). This snapshot is based on
+transaction IDs. Even if Transaction B inserts a new row and commits it,
+any subsequent plain <code>SELECT</code> queries by Transaction A will
+read from its established Read View. Because the new row's transaction
+ID is newer than Transaction A's Read View, InnoDB hides the new row
+from Transaction A, successfully preventing a phantom read.</p>
+<h3 id="2-locking-reads-using-next-key-locks">2. Locking Reads (Using
+Next-Key Locks)</h3>
+<p>MVCC works perfectly for read-only queries, but it cannot prevent
+phantom reads when a transaction intends to modify data using locking
+reads, such as:</p>
+<ul>
+<li><code>SELECT ... FOR UPDATE</code></li>
+<li><code>SELECT ... FOR SHARE</code></li>
+<li><code>UPDATE ...</code></li>
+<li><code>DELETE ...</code></li>
+</ul>
+<p>If Transaction A performs a locking read on a range of rows, InnoDB
+cannot rely solely on a snapshot because it must lock the actual records
+to prevent other transactions from modifying them. To prevent other
+transactions from inserting "phantom" records into the queried range,
+InnoDB uses <strong>Next-Key Locks</strong>.</p>
+<p>A Next-Key Lock is a combination of two types of locks:</p>
+<ul>
+<li><strong>Record Lock:</strong> A lock placed on the actual index
+records that match the query.</li>
+<li><strong>Gap Lock:</strong> A lock placed on the "gaps" (the spaces
+before, between, and after) the index records.</li>
+</ul>
+<h4 id="example-of-next-key-locking-in-action">Example of Next-Key
+Locking in Action</h4>
+<p>Suppose a table has index values of <code>10</code> and
+<code>20</code>.</p>
+<p>If Transaction A executes:
+<code>SELECT * FROM users WHERE id &gt; 15 FOR UPDATE;</code></p>
+<p>InnoDB will not only lock the record with ID <code>20</code> (Record
+Lock), but it will also place a <strong>Gap Lock</strong> on the range
+<code>(10, 20)</code> and the range
+<code>(20, positive infinity)</code>.</p>
+<p>If Transaction B attempts to run
+<code>INSERT INTO users (id) VALUES (18);</code> or
+<code>INSERT INTO users (id) VALUES (25);</code>, MySQL will force
+Transaction B to wait until Transaction A commits or rolls back. Because
+Transaction B is blocked from inserting new rows into the locked gaps,
+phantom reads are entirely prevented.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

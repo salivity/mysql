@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function of Binary Log in MySQL Replication - mysql</title>
+    <meta name="description" content="This article explains the specific role of the binary log (binlog) in MySQL replication. It covers how the binary log records data modifications on the source database, how these events are transmitted to replica databases, and how replicas apply these l">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/function-of-binary-log-in-mysql-replication">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Function of Binary Log in MySQL Replication - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/function-of-binary-log-in-mysql-replication" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains the specific role of the binary log (binlog) in MySQL replication. It covers how the binary log records data modifications on the source database, how these events are transmitted to replica databases, and how replicas apply these l" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="function-of-binary-log-in-mysql-replication">Function of Binary
+Log in MySQL Replication</h1>
+<p>This article explains the specific role of the binary log (binlog) in
+MySQL replication. It covers how the binary log records data
+modifications on the source database, how these events are transmitted
+to replica databases, and how replicas apply these logs to maintain data
+synchronization and consistency across a database cluster.</p>
+<h2 id="what-is-the-mysql-binary-log">What is the MySQL Binary Log?</h2>
+<p>The binary log, often referred to as the binlog, is a set of log
+files that record all DDL (Data Definition Language) and DML (Data
+Manipulation Language) statements that modify database schema or
+content. It does not record statements that merely query data, such as
+<code>SELECT</code> or <code>SHOW</code>.</p>
+<p>In a MySQL replication setup, the binary log acts as the primary
+source of truth, capturing every change on the master (source) server so
+those same changes can be duplicated on one or more slave (replica)
+servers.</p>
+<h2 id="the-role-of-the-binary-log-in-the-replication-process">The Role
+of the Binary Log in the Replication Process</h2>
+<p>The replication process relies on the binary log to transfer data
+state changes from the source to the replica. This process occurs in
+three distinct phases:</p>
+<h3 id="1-recording-events-on-the-source">1. Recording Events on the
+Source</h3>
+<p>When a client updates data on the source server, MySQL writes the
+transaction to the database and simultaneously records the change in the
+binary log. This logging happens in near real-time as transactions
+commit.</p>
+<h3 id="2-transmitting-events-to-the-replica">2. Transmitting Events to
+the Replica</h3>
+<p>The replica server initiates a connection to the source server. Once
+connected, the source server spawns a <strong>Binlog Dump
+Thread</strong>. This thread reads the active binary log files and sends
+the recorded events over the network to the replica.</p>
+<h3 id="3-receiving-and-applying-events-on-the-replica">3. Receiving and
+Applying Events on the Replica</h3>
+<p>The replica server utilizes two threads to process the incoming
+binary log data:</p>
+<ul>
+<li><strong>The I/O Thread:</strong> This thread connects to the source,
+receives the binary log updates sent by the Binlog Dump Thread, and
+writes them locally to files called <strong>relay logs</strong>.</li>
+<li><strong>The SQL Thread:</strong> This thread reads the relay logs on
+the replica and executes the database transactions sequentially. This
+reproduces the exact state changes that originally occurred on the
+source.</li>
+</ul>
+<h2 id="binary-log-formats">Binary Log Formats</h2>
+<p>The binary log can record events in three different formats, which
+dictate how data is replicated:</p>
+<ul>
+<li><strong>Statement-Based Replication (SBR):</strong> The binlog
+records the literal SQL queries executed on the source (e.g.,
+<code>UPDATE users SET status = 'active' WHERE id = 5</code>). The
+replica then executes the exact same SQL queries.</li>
+<li><strong>Row-Based Replication (RBR):</strong> The binlog records the
+actual changes made to individual table rows rather than the SQL
+statements. This format is highly reliable and prevents inconsistencies
+caused by non-deterministic functions (like <code>NOW()</code> or
+<code>UUID()</code>).</li>
+<li><strong>Mixed-Based Replication (MBR):</strong> MySQL automatically
+uses statement-based replication by default but switches to row-based
+replication when it detects queries that could cause inconsistencies if
+replicated as statements.</li>
+</ul>
+<h2 id="additional-functions-of-the-binary-log">Additional Functions of
+the Binary Log</h2>
+<p>Beyond replication, the binary log serves other critical
+administrative purposes:</p>
+<ul>
+<li><strong>Point-in-Time Recovery:</strong> If a database crashes or
+data is accidentally deleted, administrators can restore a full backup
+and then apply the binary log events from the time of the backup to
+restore the database to the exact moment before the failure.</li>
+<li><strong>Data Auditing:</strong> Because the binary log records all
+write operations, it can be analyzed to audit changes made to the
+database.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

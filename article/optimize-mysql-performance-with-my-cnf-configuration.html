@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimize MySQL Performance with my.cnf Configuration - mysql</title>
+    <meta name="description" content="This article provides a straightforward guide on how to configure the MySQL initialization file (my.cnf or my.ini) to optimize database performance. You will learn how to locate the configuration file and adjust key parameters—such as memory allocation">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/optimize-mysql-performance-with-my-cnf-configuration">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Optimize MySQL Performance with my.cnf Configuration - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/optimize-mysql-performance-with-my-cnf-configuration" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article provides a straightforward guide on how to configure the MySQL initialization file (my.cnf or my.ini) to optimize database performance. You will learn how to locate the configuration file and adjust key parameters—such as memory allocation" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="optimize-mysql-performance-with-mycnf-configuration">Optimize
+MySQL Performance with my.cnf Configuration</h1>
+<p>This article provides a straightforward guide on how to configure the
+MySQL initialization file (<code>my.cnf</code> or <code>my.ini</code>)
+to optimize database performance. You will learn how to locate the
+configuration file and adjust key parameters—such as memory allocation,
+thread handling, and InnoDB settings—to ensure your MySQL server runs at
+peak efficiency.</p>
+<h2 id="locating-the-configuration-file">Locating the Configuration
+File</h2>
+<p>Before making any changes, you must locate the MySQL initialization
+file. The file name and path depend on your operating system:</p>
+<ul>
+<li><strong>Linux/Unix:</strong> <code>/etc/my.cnf</code>,
+<code>/etc/mysql/my.cnf</code>, or <code>~/.my.cnf</code></li>
+<li><strong>Windows:</strong>
+<code>C:\Program Files\MySQL\MySQL Server X.Y\my.ini</code> or
+<code>C:\ProgramData\MySQL\MySQL Server X.Y\my.ini</code></li>
+</ul>
+<p>Always create a backup of this file before editing so you can easily
+revert changes if necessary.</p>
+<h2 id="key-configuration-parameters-for-optimization">Key Configuration
+Parameters for Optimization</h2>
+<p>To optimize MySQL, open the initialization file in a text editor and
+adjust the following parameters under the <code>[mysqld]</code>
+section.</p>
+<h3 id="1-innodb-buffer-pool-size">1. InnoDB Buffer Pool Size</h3>
+<p>The <code>innodb_buffer_pool_size</code> is the most critical setting
+for database performance. It defines how much memory MySQL allocates to
+cache data and indexes for InnoDB tables.</p>
+<ul>
+<li><strong>Recommendation:</strong> Set this to 50% to 80% of your
+server's total physical RAM on a dedicated database server.</li>
+<li><strong>Example:</strong> For a server with 16GB RAM, allocate 10GB
+to the buffer pool:
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">innodb_buffer_pool_size </span><span class="ot">=</span><span class="st"> 10G</span></span></code></pre></div></li>
+</ul>
+<h3 id="2-innodb-log-file-size">2. InnoDB Log File Size</h3>
+<p>The <code>innodb_log_file_size</code> parameter defines the size of
+the redo log files. Larger log files reduce the frequency of checkpoint
+flushes to disk, which improves write performance.</p>
+<ul>
+<li><strong>Recommendation:</strong> Set this to 25% of your
+<code>innodb_buffer_pool_size</code>.</li>
+<li><strong>Example:</strong>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">innodb_log_file_size </span><span class="ot">=</span><span class="st"> 2G</span></span></code></pre></div></li>
+</ul>
+<h3 id="3-maximum-connections">3. Maximum Connections</h3>
+<p>The <code>max_connections</code> setting determines how many
+simultaneous client connections MySQL will allow. Setting this too high
+can exhaust system memory, while setting it too low will result in "Too
+many connections" errors.</p>
+<ul>
+<li><strong>Recommendation:</strong> Align this with your actual
+application needs. Monitor your peak active connections and set this
+slightly higher.</li>
+<li><strong>Example:</strong>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="dt">max_connections </span><span class="ot">=</span><span class="st"> </span><span class="dv">300</span></span></code></pre></div></li>
+</ul>
+<h3 id="4-thread-cache-size">4. Thread Cache Size</h3>
+<p>Creating new threads for each connection takes CPU cycles. The
+<code>thread_cache_size</code> dictates how many threads MySQL should
+cache for reuse.</p>
+<ul>
+<li><strong>Recommendation:</strong> A safe starting formula is
+<code>8 + (max_connections / 10)</code>.</li>
+<li><strong>Example:</strong>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dt">thread_cache_size </span><span class="ot">=</span><span class="st"> </span><span class="dv">38</span></span></code></pre></div></li>
+</ul>
+<h3 id="5-temporary-table-size">5. Temporary Table Size</h3>
+<p>When MySQL performs complex queries (like those involving
+<code>GROUP BY</code>), it may create temporary tables. The
+<code>tmp_table_size</code> and <code>max_heap_table_size</code>
+parameters dictate the maximum size of these tables in memory before
+they are written to the slower hard disk.</p>
+<ul>
+<li><strong>Recommendation:</strong> Keep these two values identical. A
+value of 64M is standard for medium-sized databases.</li>
+<li><strong>Example:</strong>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dt">tmp_table_size </span><span class="ot">=</span><span class="st"> 64M</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="dt">max_heap_table_size </span><span class="ot">=</span><span class="st"> 64M</span></span></code></pre></div></li>
+</ul>
+<h3 id="6-query-cache-for-mysql-57-and-older">6. Query Cache (For MySQL
+5.7 and Older)</h3>
+<p>If you are running MySQL 5.7 or older, you can utilize the query
+cache to store SELECT query results. Note that the query cache was
+deprecated in MySQL 5.7.20 and entirely removed in MySQL 8.0.</p>
+<ul>
+<li><strong>Recommendation:</strong> If using an older version, enable
+the query cache with a conservative limit (large query caches can cause
+lock contention).</li>
+<li><strong>Example:</strong>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">query_cache_type </span><span class="ot">=</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="dt">query_cache_size </span><span class="ot">=</span><span class="st"> 64M</span></span></code></pre></div></li>
+</ul>
+<h2 id="applying-and-testing-the-changes">Applying and Testing the
+Changes</h2>
+<p>After saving the changes to your initialization file, you must
+restart the MySQL service for the configurations to take effect.</p>
+<ul>
+<li><strong>On Linux (systemd):</strong>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart mysql</span></code></pre></div></li>
+<li><strong>On Windows (Command Prompt as Admin):</strong>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode cmd"><code class="sourceCode dosbat"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>net stop mysql</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>net start mysql</span></code></pre></div></li>
+</ul>
+<p>Once restarted, monitor your system resources and MySQL error logs
+(<code>error.log</code>) to ensure stability and verify that the
+database handles the workload efficiently.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

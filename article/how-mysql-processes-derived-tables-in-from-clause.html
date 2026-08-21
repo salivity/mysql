@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How MySQL Processes Derived Tables in FROM Clause - mysql</title>
+    <meta name="description" content="This article explains how the MySQL query optimizer handles derived tables—subqueries specified within the FROM clause of a SQL statement. It covers the two main processing strategies: merging the derived table into the outer query and materializing it">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-mysql-processes-derived-tables-in-from-clause">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How MySQL Processes Derived Tables in FROM Clause - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-mysql-processes-derived-tables-in-from-clause" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how the MySQL query optimizer handles derived tables—subqueries specified within the FROM clause of a SQL statement. It covers the two main processing strategies: merging the derived table into the outer query and materializing it" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-mysql-processes-derived-tables-in-from-clause">How MySQL
+Processes Derived Tables in FROM Clause</h1>
+<p>This article explains how the MySQL query optimizer handles derived
+tables—subqueries specified within the <code>FROM</code> clause of a SQL
+statement. It covers the two main processing strategies: merging the
+derived table into the outer query and materializing it into an internal
+temporary table, detailing how MySQL decides between these approaches to
+optimize performance.</p>
+<p>A derived table is a subquery in the <code>FROM</code> clause that
+acts as a virtual table for the outer query. Because these subqueries
+can contain complex logic, the MySQL optimizer must determine the most
+efficient way to execute them. To do this, it employs two primary
+strategies: <strong>Merging</strong> and
+<strong>Materialization</strong>.</p>
+<h3 id="the-merge-strategy">The Merge Strategy</h3>
+<p>When using the merge strategy, the optimizer integrates the derived
+table's query block directly into the outer query block. This process
+rewrites the query internally, eliminating the need to create a physical
+temporary table and allowing the optimizer to consider a wider range of
+join orders and indexing options.</p>
+<p>MySQL prefers the merge strategy because it avoids the overhead of
+writing and reading temporary data. However, the optimizer can only
+merge a derived table if it does not contain constructs that prevent
+merging. Factors that prevent the merge strategy include:</p>
+<ul>
+<li>Aggregate functions (such as <code>SUM()</code>, <code>MIN()</code>,
+or <code>COUNT()</code>)</li>
+<li><code>DISTINCT</code></li>
+<li><code>GROUP BY</code></li>
+<li><code>HAVING</code></li>
+<li><code>LIMIT</code></li>
+<li><code>UNION</code> or <code>UNION ALL</code></li>
+</ul>
+<p>If any of these clauses are present in the subquery, MySQL cannot
+merge the derived table and must fall back to materialization.</p>
+<h3 id="the-materialization-strategy">The Materialization Strategy</h3>
+<p>If merging is not possible, MySQL uses the materialization strategy.
+In this scenario, the optimizer executes the subquery and stores the
+resulting rows in an internal temporary table.</p>
+<p>This temporary table is initially created in memory using the
+<code>TempTable</code> or <code>MEMORY</code> storage engine. If the
+dataset size exceeds the configured limits (such as
+<code>tmp_table_size</code> or <code>max_heap_table_size</code>), MySQL
+writes the temporary table to disk using the <code>InnoDB</code> storage
+engine.</p>
+<p>To optimize subsequent joins with other tables in the query, MySQL
+often automatically creates an index on the columns of the materialized
+table. This on-the-fly indexing significantly speeds up data retrieval
+during the execution of the outer query.</p>
+<h3 id="controlling-optimizer-decisions">Controlling Optimizer
+Decisions</h3>
+<p>You can control whether MySQL attempts to merge derived tables using
+the <code>optimizer_switch</code> system variable. The
+<code>derived_merge</code> flag, which is enabled by default, controls
+this behavior.</p>
+<p>To disable the merge strategy globally or for a specific session, you
+can adjust the setting:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> optimizer_switch <span class="op">=</span> <span class="st">&#39;derived_merge=off&#39;</span>;</span></code></pre></div>
+<p>Additionally, you can override this behavior on a query-by-query
+basis using optimizer hints. The <code>/*+ MERGE(...) */</code> and
+<code>/*+ NO_MERGE(...) */</code> hints allow you to force or prevent
+merging for a specific derived table within your SQL statement.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

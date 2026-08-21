@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Subquery Flattening into Semi-Joins - mysql</title>
+    <meta name="description" content="This article explains how the MySQL optimizer enhances database performance by flattening subqueries into semi-joins. You will learn what semi-joins are, the specific criteria MySQL uses to trigger this optimization, and the five core execution strategie">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-subquery-flattening-into-semi-joins">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Subquery Flattening into Semi-Joins - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-subquery-flattening-into-semi-joins" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how the MySQL optimizer enhances database performance by flattening subqueries into semi-joins. You will learn what semi-joins are, the specific criteria MySQL uses to trigger this optimization, and the five core execution strategie" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-subquery-flattening-into-semi-joins">MySQL Subquery
+Flattening into Semi-Joins</h1>
+<p>This article explains how the MySQL optimizer enhances database
+performance by flattening subqueries into semi-joins. You will learn
+what semi-joins are, the specific criteria MySQL uses to trigger this
+optimization, and the five core execution strategies the optimizer
+employs to execute these queries efficiently.</p>
+<h3 id="understanding-subqueries-and-semi-joins">Understanding
+Subqueries and Semi-Joins</h3>
+<p>In relational databases, a subquery is a query nested inside another
+query. Traditionally, evaluating a subquery for every row of the outer
+query (correlated execution) is highly inefficient.</p>
+<p>To optimize this, the MySQL optimizer attempts to "flatten" eligible
+subqueries into <strong>semi-joins</strong>. A semi-join is a
+specialized join operation that returns rows from an outer table if and
+only if there is at least one matching row in an inner table. Unlike a
+standard inner join, a semi-join stops searching the inner table as soon
+as it finds the first match for a given outer row, preventing duplicate
+rows in the final result set.</p>
+<h3 id="eligibility-criteria-for-semi-join-transformation">Eligibility
+Criteria for Semi-Join Transformation</h3>
+<p>The MySQL optimizer does not flatten all subqueries. To qualify for a
+semi-join transformation, a subquery must meet the following
+conditions:</p>
+<ul>
+<li><strong>Syntax:</strong> It must be an <code>IN</code>,
+<code>= ANY</code>, or <code>EXISTS</code> subquery.</li>
+<li><strong>Location:</strong> It must appear at the top level of the
+<code>WHERE</code> or <code>ON</code> clause, optionally combined with
+other conditions using <code>AND</code>.</li>
+<li><strong>Structure:</strong> It must be a simple <code>SELECT</code>
+query. It cannot contain <code>UNION</code> operations,
+<code>GROUP BY</code> or <code>HAVING</code> clauses, or aggregate
+functions.</li>
+<li><strong>Implicit predicates:</strong> It must not contain a
+<code>LIMIT</code> clause.</li>
+</ul>
+<h3 id="the-five-semi-join-execution-strategies">The Five Semi-Join
+Execution Strategies</h3>
+<p>Once the optimizer decides to flatten a subquery into a semi-join, it
+evaluates the cost of five distinct execution strategies to choose the
+most efficient path.</p>
+<h4 id="1-table-pullout">1. Table Pullout</h4>
+<p>This is the most efficient strategy. If the subquery's target column
+has a <code>PRIMARY KEY</code> or a <code>UNIQUE INDEX</code>, the
+optimizer knows there can be no duplicate matches. It "pulls" the
+subquery table out into the outer query, treating the entire operation
+as a standard inner join.</p>
+<h4 id="2-firstmatch">2. FirstMatch</h4>
+<p>If table pullout is not possible, the optimizer can use the
+FirstMatch strategy. The query runs like a nested-loop join. For each
+row in the outer table, MySQL scans the inner table. The moment it finds
+the first matching row, it returns the outer row and immediately
+shortcuts the search for that specific outer row, moving on to the
+next.</p>
+<h4 id="3-loosescan">3. LooseScan</h4>
+<p>This strategy is used when the inner table has an index on the join
+column. MySQL scans the index of the subquery table, but only reads the
+first row of each group of duplicate values. It then joins these unique
+keys with the outer table, avoiding the creation of duplicate
+results.</p>
+<h4 id="4-materialization">4. Materialization</h4>
+<p>The optimizer executes the subquery once and stores the unique
+results in a temporary, in-memory table (known as a materialized table)
+with a temporary index. MySQL then performs an inner join between the
+outer table and this materialized table. If the temporary table becomes
+too large, it is written to disk.</p>
+<h4 id="5-duplicate-weedout">5. Duplicate Weedout</h4>
+<p>In this strategy, the optimizer processes the query as a regular
+inner join, which may generate duplicate rows from the outer table. To
+handle these duplicates, MySQL creates a temporary table with a primary
+key. As rows are generated, their row IDs are inserted into this
+temporary table. If an ID insertion fails because it already exists, the
+duplicate row is "weeded out" and discarded.</p>
+<h3 id="checking-the-optimizers-decision">Checking the Optimizer's
+Decision</h3>
+<p>To see how the MySQL optimizer is handling your subqueries, you can
+prefix your query with the <code>EXPLAIN</code> command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPLAIN</span> <span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> orders <span class="kw">WHERE</span> customer_id <span class="kw">IN</span> (<span class="kw">SELECT</span> customer_id <span class="kw">FROM</span> VIP_customers);</span></code></pre></div>
+<p>By reviewing the output—specifically the <code>Extra</code> column or
+by using <code>EXPLAIN FORMAT=JSON</code>—you can identify if a
+semi-join was utilized and which of the five strategies (e.g.,
+<code>materialized</code>, <code>FirstMatch</code>,
+<code>LooseScan</code>) the optimizer chose.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Blackhole Storage Engine Use Cases - mysql</title>
+    <meta name="description" content="The MySQL Blackhole storage engine acts as a "dummy" engine that accepts data but immediately discards it without storing it on disk, behaving similarly to the /dev/null device in Unix-like systems. While a database engine that does not save data may see">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-blackhole-storage-engine-use-cases">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Blackhole Storage Engine Use Cases - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-blackhole-storage-engine-use-cases" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="The MySQL Blackhole storage engine acts as a "dummy" engine that accepts data but immediately discards it without storing it on disk, behaving similarly to the /dev/null device in Unix-like systems. While a database engine that does not save data may see" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-blackhole-storage-engine-use-cases">MySQL Blackhole
+Storage Engine Use Cases</h1>
+<p>The MySQL Blackhole storage engine acts as a "dummy" engine that
+accepts data but immediately discards it without storing it on disk,
+behaving similarly to the <code>/dev/null</code> device in Unix-like
+systems. While a database engine that does not save data may seem
+counterintuitive, it serves several critical functions in advanced
+database architectures. This article explains the most common and
+effective use cases for the Blackhole storage engine, demonstrating how
+it can optimize database performance, replication, and testing.</p>
+<h2 id="1-multi-tier-replication-and-filtering">1. Multi-Tier
+Replication and Filtering</h2>
+<p>In complex replication topologies, a master database often needs to
+replicate data to multiple slave databases across different geographical
+locations. Direct replication to all slaves can overwhelm the master
+server's network bandwidth.</p>
+<p>By introducing an intermediate master configured with the Blackhole
+engine, you can offload this network strain. The intermediate server
+receives the binary logs from the primary master and writes them to its
+own binary logs for the slave servers to read. Because the intermediate
+server uses the Blackhole engine, it does not write any data to its
+local disk. This eliminates disk I/O bottlenecks on the intermediate
+node while allowing it to serve as a traffic-distributing relay.</p>
+<h2 id="2-performance-and-overhead-testing">2. Performance and Overhead
+Testing</h2>
+<p>Database administrators and developers frequently need to isolate
+performance bottlenecks within an application stack. The Blackhole
+engine is highly effective for determining whether a performance issue
+is caused by application-level SQL generation or the physical disk write
+speed of the database storage engine (such as InnoDB).</p>
+<p>By temporarily switching a table's storage engine to Blackhole, you
+can run your application's write queries at full speed. Because
+Blackhole discards the data instantly, the disk write overhead is
+reduced to zero. If the query execution remains slow, the bottleneck
+lies within the application, network, or query parser. If the speed
+improves drastically, the limitation is confirmed to be disk I/O or
+storage engine configuration.</p>
+<h2 id="3-trigger-execution-and-audit-logging">3. Trigger Execution and
+Audit Logging</h2>
+<p>Even though the Blackhole engine does not store data, it still
+triggers any database rules, constraints, and triggers associated with
+the tables.</p>
+<p>You can design a workflow where data is written to a Blackhole table
+to initiate a trigger. The trigger can then perform actions such as
+inserting data into a separate, permanent audit log table, updating
+statistics, or alerting external systems. Once the trigger completes,
+the original data written to the Blackhole table is discarded, saving
+storage space while still executing the necessary side-effect logic.</p>
+<h2 id="4-sql-syntax-and-connection-validation">4. SQL Syntax and
+Connection Validation</h2>
+<p>In high-throughput environments, applications may need to validate
+that their connection to the database is active and that their SQL
+syntax is correct without actually modifying the database state.</p>
+<p>Sending test writes to a Blackhole table validates that the
+application can successfully authenticate, connect, and parse SQL
+queries. Because no data is written, there is no risk of polluting the
+production database with dummy test records, and there is no need to run
+subsequent <code>DELETE</code> or <code>ROLLBACK</code> operations.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

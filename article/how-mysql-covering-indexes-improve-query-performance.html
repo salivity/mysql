@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How MySQL Covering Indexes Improve Query Performance - mysql</title>
+    <meta name="description" content="In MySQL database optimization, a covering index is one of the most effective tools for accelerating query execution. This article explains how a covering index improves query performance by allowing the database engine to retrieve all requested data dir">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-mysql-covering-indexes-improve-query-performance">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How MySQL Covering Indexes Improve Query Performance - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-mysql-covering-indexes-improve-query-performance" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="In MySQL database optimization, a covering index is one of the most effective tools for accelerating query execution. This article explains how a covering index improves query performance by allowing the database engine to retrieve all requested data dir" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-mysql-covering-indexes-improve-query-performance">How MySQL
+Covering Indexes Improve Query Performance</h1>
+<p>In MySQL database optimization, a covering index is one of the most
+effective tools for accelerating query execution. This article explains
+how a covering index improves query performance by allowing the database
+engine to retrieve all requested data directly from the index structure
+itself, completely bypassing the need to read the actual table rows. We
+will examine the mechanics of how MySQL processes these indexes, why
+they drastically reduce disk I/O, and how you can implement them to
+optimize your database.</p>
+<h3 id="understanding-the-covering-index">Understanding the Covering
+Index</h3>
+<p>To understand how a covering index works, it is essential to first
+understand how MySQL typically processes a query using a standard index.
+In a standard index lookup, MySQL searches the B-tree index structure to
+find the rows that match your query's <code>WHERE</code> clause. Once it
+finds the matching index entries, it must use the pointers stored in
+those entries to perform a secondary lookup on the actual table (the
+clustered index) to fetch the rest of the requested columns in the
+<code>SELECT</code> clause. This secondary step is known as a table
+lookup or key lookup.</p>
+<p>A covering index is not a special type of index; rather, it is a
+design strategy. An index is considered "covering" for a specific query
+when the index contains all the columns that the query needs to evaluate
+and return. This includes columns in the <code>SELECT</code>,
+<code>JOIN</code>, <code>WHERE</code>, <code>GROUP BY</code>, and
+<code>ORDER BY</code> clauses.</p>
+<h3 id="how-it-eliminates-table-lookups">How it Eliminates Table
+Lookups</h3>
+<p>When a query is fully "covered" by an index, the MySQL optimizer
+recognizes that it does not need to access the underlying table
+rows.</p>
+<p>The query execution flow shifts from:</p>
+<ol type="1">
+<li>Search Index -&gt; 2. Retrieve Row Pointers -&gt; 3. Fetch Rows from
+Table -&gt; 4. Return Data</li>
+</ol>
+<p>To:</p>
+<ol type="1">
+<li>Search Index -&gt; 2. Return Data Directly from Index</li>
+</ol>
+<p>By eliminating step 3, MySQL avoids random disk I/O operations.
+Reading data from the table pages on a disk is significantly slower than
+reading from index pages, which are more compact and highly likely to be
+cached in memory.</p>
+<h3 id="key-benefits-of-a-covering-index">Key Benefits of a Covering
+Index</h3>
+<ol type="1">
+<li><strong>Reduction in Disk I/O:</strong> Since the index blocks
+contain all the necessary data, MySQL reads fewer pages from the disk.
+This is especially beneficial for read-heavy applications and large
+datasets that exceed the size of the RAM.</li>
+<li><strong>Efficient Memory Utilization:</strong> Indexes are much
+smaller than actual tables. Because of their smaller size, covering
+indexes can be easily cached entirely within the InnoDB buffer pool,
+ensuring ultra-fast, in-memory query execution.</li>
+<li><strong>Sequential vs. Random Access:</strong> Indexes are ordered
+sequentially. Reading data sequentially from an index is much faster
+than the random disk access required to jump to various locations on the
+disk to retrieve full table rows.</li>
+<li><strong>Improved Sorting and Grouping:</strong> If your query
+requires sorting (<code>ORDER BY</code>) or grouping
+(<code>GROUP BY</code>), a covering index that includes these columns in
+the correct order allows MySQL to skip the expensive filesort operation
+entirely.</li>
+</ol>
+<h3 id="identifying-a-covering-index-in-mysql">Identifying a Covering
+Index in MySQL</h3>
+<p>You can easily verify if MySQL is using a covering index by
+prepending your query with the <code>EXPLAIN</code> statement.</p>
+<p>In the output of the <code>EXPLAIN</code> plan, look at the
+<strong>Extra</strong> column. If you see <strong>"Using
+index"</strong>, it indicates that MySQL is using a covering index to
+resolve the query without accessing the actual table. Note that "Using
+index" is different from "Using index condition" (which refers to Index
+Condition Pushdown).</p>
+<h3 id="designing-a-covering-index">Designing a Covering Index</h3>
+<p>To design a covering index, create a composite (multi-column) index
+that includes all the columns referenced in your query.</p>
+<p>For example, consider the following query:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> employee_id, email <span class="kw">FROM</span> users <span class="kw">WHERE</span> department_id <span class="op">=</span> <span class="dv">5</span>;</span></code></pre></div>
+<p>A standard index on <code>department_id</code> would require MySQL to
+look up the department, then fetch the table rows to retrieve the
+<code>employee_id</code> and <code>email</code>.</p>
+<p>To make this a covering index, you would define the index on all
+three columns:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_dept_emp_email <span class="kw">ON</span> users (department_id, employee_id, email);</span></code></pre></div>
+<p>In this structure, the index is ordered first by
+<code>department_id</code> (satisfying the <code>WHERE</code> clause),
+while also carrying the payload of <code>employee_id</code> and
+<code>email</code> to satisfy the <code>SELECT</code> clause without a
+table lookup.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

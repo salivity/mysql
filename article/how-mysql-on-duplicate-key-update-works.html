@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How MySQL ON DUPLICATE KEY UPDATE Works - mysql</title>
+    <meta name="description" content="This article explains how MySQL processes the ON DUPLICATE KEY UPDATE clause during an INSERT operation. It covers the mechanics of how MySQL detects duplicate keys, how it decides whether to insert a new row or update an existing one, and the impact of">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-mysql-on-duplicate-key-update-works">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How MySQL ON DUPLICATE KEY UPDATE Works - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-mysql-on-duplicate-key-update-works" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how MySQL processes the ON DUPLICATE KEY UPDATE clause during an INSERT operation. It covers the mechanics of how MySQL detects duplicate keys, how it decides whether to insert a new row or update an existing one, and the impact of" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-mysql-on-duplicate-key-update-works">How MySQL ON DUPLICATE
+KEY UPDATE Works</h1>
+<p>This article explains how MySQL processes the
+<code>ON DUPLICATE KEY UPDATE</code> clause during an
+<code>INSERT</code> operation. It covers the mechanics of how MySQL
+detects duplicate keys, how it decides whether to insert a new row or
+update an existing one, and the impact of this clause on affected row
+counts and auto-increment values.</p>
+<h2 id="the-core-mechanics-of-on-duplicate-key-update">The Core
+Mechanics of ON DUPLICATE KEY UPDATE</h2>
+<p>When you execute an <code>INSERT</code> statement containing the
+<code>ON DUPLICATE KEY UPDATE</code> clause, MySQL attempts to insert
+the new row into the database table first.</p>
+<p>If the insert operation succeeds without violating any unique
+constraints, MySQL inserts the row, and the operation is complete.
+However, if the insert fails because a value violates a
+<code>PRIMARY KEY</code> or a <code>UNIQUE</code> index constraint,
+MySQL catches this error internally and immediately performs an
+<code>UPDATE</code> on the existing row using the column-value pairs
+specified after the <code>UPDATE</code> keyword.</p>
+<h2 id="referencing-attempted-values">Referencing Attempted Values</h2>
+<p>To update the existing row with the values you originally tried to
+insert, MySQL provides a way to reference those pending values.</p>
+<p>In older versions of MySQL, you use the <code>VALUES(col_name)</code>
+function:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> users (<span class="kw">id</span>, username, email) </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">VALUES</span> (<span class="dv">1</span>, <span class="st">&#39;john_doe&#39;</span>, <span class="st">&#39;john@example.com&#39;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">ON</span> DUPLICATE <span class="kw">KEY</span> <span class="kw">UPDATE</span> email <span class="op">=</span> <span class="kw">VALUES</span>(email);</span></code></pre></div>
+<p>Starting with MySQL 8.0.20, the <code>VALUES()</code> function is
+deprecated. Instead, you should use row aliases to reference the new
+values:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> users (<span class="kw">id</span>, username, email) </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">VALUES</span> (<span class="dv">1</span>, <span class="st">&#39;john_doe&#39;</span>, <span class="st">&#39;john@example.com&#39;</span>) <span class="kw">AS</span> new_data</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">ON</span> DUPLICATE <span class="kw">KEY</span> <span class="kw">UPDATE</span> email <span class="op">=</span> new_data.email;</span></code></pre></div>
+<h2 id="how-affected-rows-are-calculated">How Affected Rows are
+Calculated</h2>
+<p>The database engine returns different "affected rows" counts
+depending on the action taken during the execution of the statement:</p>
+<ul>
+<li><strong>1</strong> if the row is inserted as a brand-new
+record.</li>
+<li><strong>2</strong> if an existing row is updated.</li>
+<li><strong>0</strong> if an existing row is matched, but the update
+does not change any values (the database detects that the new values are
+identical to the old ones and skips writing to disk).</li>
+</ul>
+<h2 id="impact-on-auto-increment-columns">Impact on Auto-Increment
+Columns</h2>
+<p>If the table contains an <code>AUTO_INCREMENT</code> column, running
+an <code>INSERT ... ON DUPLICATE KEY UPDATE</code> statement will still
+increment the internal auto-increment counter, even if the operation
+results in an <code>UPDATE</code> rather than an <code>INSERT</code>.
+This behavior, governed by the <code>innodb_autoinc_lock_mode</code>
+configuration, can result in gaps in your primary key sequence over
+time.</p>
+<h2 id="multi-column-unique-keys-warning">Multi-Column Unique Keys
+Warning</h2>
+<p>If a table has multiple <code>UNIQUE</code> indexes, and the insert
+attempt conflicts with more than one unique constraint across different
+rows, MySQL will only update one of the conflicting rows. Because the
+order of evaluation depends on the physical storage and index
+structures, the specific row that gets updated is not guaranteed. For
+predictable results, it is best to use this clause on tables that have
+only one unique key constraint.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

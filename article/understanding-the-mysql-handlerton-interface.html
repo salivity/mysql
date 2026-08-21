@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding the MySQL Handlerton Interface - mysql</title>
+    <meta name="description" content="This article provides an in-depth look at the MySQL handlerton (handler singleton) interface, a core component of the MySQL pluggable storage engine architecture. Readers will learn about its definition, its structural role in separating the SQL parser f">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/understanding-the-mysql-handlerton-interface">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Understanding the MySQL Handlerton Interface - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/understanding-the-mysql-handlerton-interface" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article provides an in-depth look at the MySQL handlerton (handler singleton) interface, a core component of the MySQL pluggable storage engine architecture. Readers will learn about its definition, its structural role in separating the SQL parser f" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="understanding-the-mysql-handlerton-interface">Understanding the
+MySQL Handlerton Interface</h1>
+<p>This article provides an in-depth look at the MySQL
+<code>handlerton</code> (handler singleton) interface, a core component
+of the MySQL pluggable storage engine architecture. Readers will learn
+about its definition, its structural role in separating the SQL parser
+from the underlying storage engines, and its specific responsibilities
+in managing global engine states, transaction processing, and object
+instantiation.</p>
+<hr />
+<h2 id="what-is-the-handlerton-interface">What is the Handlerton
+Interface?</h2>
+<p>In the MySQL database server architecture, the storage engine layer
+is pluggable, allowing engines like InnoDB, MyISAM, and Memory to
+coexist. To manage these diverse engines, MySQL uses two primary
+abstractions defined in the source code: the <code>handler</code> class
+and the <code>handlerton</code> struct.</p>
+<p>While a <code>handler</code> instance is created for every individual
+open table to perform row-level operations (such as reading, writing,
+and updating records), the <code>handlerton</code> is a
+<strong>singleton</strong> representing the storage engine itself. There
+is exactly one <code>handlerton</code> instance per registered storage
+engine in a running MySQL server.</p>
+<h2 id="key-functions-of-the-handlerton">Key Functions of the
+Handlerton</h2>
+<p>The <code>handlerton</code> acts as the primary interface through
+which the MySQL optimizer and SQL executor communicate with a storage
+engine on a global level. Its main responsibilities include:</p>
+<h3 id="1-engine-initialization-and-registration">1. Engine
+Initialization and Registration</h3>
+<p>When the MySQL server starts up or when a storage engine plugin is
+dynamically loaded, the engine must register itself with the server. It
+does this by passing its designated <code>handlerton</code> structure to
+the MySQL core. This structure contains metadata about the engine's
+capabilities, such as supported transaction isolation levels, row
+formats, and whether it supports savepoints.</p>
+<h3 id="2-transaction-management-and-two-phase-commit-2pc">2.
+Transaction Management and Two-Phase Commit (2PC)</h3>
+<p>One of the most critical roles of the <code>handlerton</code> is
+managing transactions. It contains function pointers for
+transaction-specific operations that are executed globally across the
+engine, including:</p>
+<ul>
+<li><strong>Commit and Rollback:</strong> Committing or rolling back
+active transactions.</li>
+<li><strong>Two-Phase Commit (2PC):</strong> Coordinating preparation
+steps (<code>prepare</code>) and recovery operations in distributed or
+XA transactions. This ensures consistency between the MySQL binary log
+(binlog) and the storage engine.</li>
+<li><strong>Savepoints:</strong> Managing checkpoints within a
+transaction to allow partial rollbacks.</li>
+</ul>
+<h3 id="3-handler-instantiation">3. Handler Instantiation</h3>
+<p>The <code>handlerton</code> serves as a factory for table-level
+<code>handler</code> objects. When a client query requires access to a
+specific table, the MySQL server calls the <code>create</code> method of
+the corresponding engine's <code>handlerton</code>. This method
+instantiates and returns a new <code>handler</code> object tailored to
+that specific table.</p>
+<h3 id="4-connection-and-thread-management">4. Connection and Thread
+Management</h3>
+<p>The <code>handlerton</code> manages thread-local storage slots for
+database connections. When a client connects to MySQL, the server
+allocates space within the connection object (the <code>THD</code>
+structure) for storage-engine-specific state information. The
+<code>handlerton</code> initializes and cleans up these engine-specific
+connection contexts.</p>
+<h2 id="handlerton-vs-handler-a-quick-comparison">Handlerton vs.
+Handler: A Quick Comparison</h2>
+<p>To understand the server architecture clearly, it is helpful to
+distinguish between these two components:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Feature</th>
+<th style="text-align: left;">Handlerton (<code>handlerton</code>)</th>
+<th style="text-align: left;">Handler (<code>handler</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Cardinality</strong></td>
+<td style="text-align: left;">One per storage engine.</td>
+<td style="text-align: left;">One per open table/index partition.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Scope</strong></td>
+<td style="text-align: left;">Global (engine-wide).</td>
+<td style="text-align: left;">Instance-specific (table-wide).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Primary Focus</strong></td>
+<td style="text-align: left;">Transactions, initialization, and
+connection states.</td>
+<td style="text-align: left;">Data retrieval, indexing, and row-level
+operations.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Analogy</strong></td>
+<td style="text-align: left;">The factory that builds the tools.</td>
+<td style="text-align: left;">The specific tool used to do the
+work.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="conclusion">Conclusion</h2>
+<p>The <code>handlerton</code> interface is the backbone of MySQL's
+extensible, pluggable storage engine architecture. By isolating global
+operations like transaction coordination, initialization, and resource
+allocation into a single engine-level interface, MySQL can seamlessly
+integrate highly diverse storage technologies under a single SQL
+execution engine.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

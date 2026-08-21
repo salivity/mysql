@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impact of Heavy Writes on MySQL Index Maintenance - mysql</title>
+    <meta name="description" content="High-volume write operations in MySQL—such as frequent INSERT, UPDATE, and DELETE queries—can significantly degrade database performance due to the overhead of maintaining indexes. This article explains how heavy write traffic forces MySQL to constan">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/impact-of-heavy-writes-on-mysql-index-maintenance">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Impact of Heavy Writes on MySQL Index Maintenance - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/impact-of-heavy-writes-on-mysql-index-maintenance" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="High-volume write operations in MySQL—such as frequent INSERT, UPDATE, and DELETE queries—can significantly degrade database performance due to the overhead of maintaining indexes. This article explains how heavy write traffic forces MySQL to constan" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="impact-of-heavy-writes-on-mysql-index-maintenance">Impact of
+Heavy Writes on MySQL Index Maintenance</h1>
+<p>High-volume write operations in MySQL—such as frequent
+<code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code>
+queries—can significantly degrade database performance due to the
+overhead of maintaining indexes. This article explains how heavy write
+traffic forces MySQL to constantly update index trees, resulting in disk
+I/O bottlenecks and CPU overhead, and provides actionable strategies to
+minimize this impact.</p>
+<h2 id="the-mechanics-of-index-updates-during-writes">The Mechanics of
+Index Updates during Writes</h2>
+<p>Whenever a row is modified in MySQL, the database must keep all
+corresponding indexes synchronized.</p>
+<ul>
+<li><strong>Clustered Index (Primary Key):</strong> In InnoDB, data is
+physically organized by the primary key. An <code>INSERT</code> requires
+placing the new row into the correct location within the clustered
+B-tree index.</li>
+<li><strong>Secondary Indexes:</strong> Every secondary index contains
+the index columns plus the primary key value. When a row is inserted,
+updated, or deleted, every secondary index associated with the modified
+columns must also be updated.</li>
+</ul>
+<p>Unlike clustered index writes—which are often sequential if using
+auto-incrementing keys—secondary index updates are typically random.
+This randomness forces the storage engine to perform random disk I/O to
+locate and update the correct index pages.</p>
+<h2 id="key-performance-impacts">Key Performance Impacts</h2>
+<h3 id="1-page-splits-and-fragmentation">1. Page Splits and
+Fragmentation</h3>
+<p>B-tree indexes are stored in fixed-size pages (usually 16KB in
+InnoDB). When a new key needs to be inserted into a page that is already
+full, InnoDB must perform a <strong>page split</strong>. It splits the
+full page into two, moves approximately half the data to the new page,
+and updates the parent index pointers.</p>
+<p>Page splits consume CPU cycles, require immediate write operations,
+and lead to physical index fragmentation, which degrades subsequent read
+query performance.</p>
+<h3 id="2-disk-io-bottlenecks">2. Disk I/O Bottlenecks</h3>
+<p>For large databases where indexes do not fit entirely in RAM (the
+InnoDB Buffer Pool), updating secondary indexes requires reading pages
+from disk into memory, modifying them, and eventually flushing them back
+to disk. Under heavy write loads, this creates a massive queue of random
+read and write I/O operations, slowing down the entire database
+server.</p>
+<h3 id="3-locking-and-concurrency-contention">3. Locking and Concurrency
+Contention</h3>
+<p>To safely update index pages, MySQL must acquire locks on those
+pages. Heavy concurrent writes lead to index lock contention (latch
+contention), forcing other write and read transactions to wait, thereby
+increasing query latency and transaction response times.</p>
+<h2 id="innodb-mitigation-the-change-buffer">InnoDB Mitigation: The
+Change Buffer</h2>
+<p>To reduce the impact of random I/O on secondary indexes, InnoDB
+utilizes a memory structure called the <strong>Change
+Buffer</strong>.</p>
+<p>When a write operation affects a secondary index page that is not
+currently cached in the buffer pool, InnoDB buffers the change in memory
+instead of reading the page from disk. These buffered changes are later
+merged into the actual index pages when the pages are read by other
+queries or during background idle threads.</p>
+<p>While highly effective, the change buffer has limitations. Under
+sustained, heavy write operations, the change buffer can become full.
+Once saturated, MySQL is forced to write directly to disk, causing a
+sudden and severe drop in write throughput.</p>
+<h2 id="strategies-to-optimize-write-performance">Strategies to Optimize
+Write Performance</h2>
+<p>To mitigate the performance degradation caused by index maintenance
+during heavy write operations, consider the following best
+practices:</p>
+<ul>
+<li><strong>Minimize Secondary Indexes:</strong> Only index columns that
+are critical for query performance. Every redundant or unused index adds
+unnecessary write overhead.</li>
+<li><strong>Use Sequential Primary Keys:</strong> Use auto-incrementing
+integers or ordered UUIDs (like UUIDv6 or UUIDv7) as primary keys. This
+ensures inserts occur at the end of the clustered index, preventing page
+splits.</li>
+<li><strong>Batch Write Operations:</strong> Instead of executing
+thousands of individual <code>INSERT</code> statements, group them into
+single-transaction batches (e.g., inserting 500 to 1,000 rows at once).
+This reduces transaction log flushing overhead.</li>
+<li><strong>Configure the Change Buffer:</strong> Increase the
+<code>innodb_change_buffer_max_size</code> configuration variable (up to
+50% of the buffer pool) if your workload consists of heavy write
+operations with fewer reads.</li>
+<li><strong>Optimize the Buffer Pool:</strong> Ensure
+<code>innodb_buffer_pool_size</code> is allocated up to 70-80% of
+available system RAM to keep as many index pages in memory as possible,
+reducing physical disk I/O.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

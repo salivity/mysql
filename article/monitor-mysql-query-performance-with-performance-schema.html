@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor MySQL Query Performance with Performance Schema - mysql</title>
+    <meta name="description" content="This article provides a practical guide on how to monitor real-time query performance and execution times using the MySQL Performance Schema. You will learn how to verify that the Performance Schema is enabled, configure the necessary instruments and con">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/monitor-mysql-query-performance-with-performance-schema">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Monitor MySQL Query Performance with Performance Schema - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/monitor-mysql-query-performance-with-performance-schema" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article provides a practical guide on how to monitor real-time query performance and execution times using the MySQL Performance Schema. You will learn how to verify that the Performance Schema is enabled, configure the necessary instruments and con" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="monitor-mysql-query-performance-with-performance-schema">Monitor
+MySQL Query Performance with Performance Schema</h1>
+<p>This article provides a practical guide on how to monitor real-time
+query performance and execution times using the MySQL Performance
+Schema. You will learn how to verify that the Performance Schema is
+enabled, configure the necessary instruments and consumers, and run
+specific SQL queries to detect active statements, measure latency, and
+analyze execution statistics.</p>
+<h2 id="step-1-verify-performance-schema-is-enabled">Step 1: Verify
+Performance Schema is Enabled</h2>
+<p>Before collecting performance metrics, verify that the Performance
+Schema is enabled on your MySQL instance. Run the following command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>SHOW VARIABLES <span class="kw">LIKE</span> <span class="st">&#39;performance_schema&#39;</span>;</span></code></pre></div>
+<p>If the value is <code>ON</code>, the feature is active. If it is
+<code>OFF</code>, you must enable it by adding
+<code>performance_schema=ON</code> to your MySQL configuration file
+(<code>my.cnf</code> or <code>my.ini</code>) and restarting the MySQL
+server.</p>
+<h2 id="step-2-enable-statement-instruments-and-consumers">Step 2:
+Enable Statement Instruments and Consumers</h2>
+<p>To monitor query execution times, MySQL must be configured to collect
+statement events. Run these queries to enable the necessary statement
+instruments and consumers dynamically:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Enable statement instrumentation</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> performance_schema.setup_instruments </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> ENABLED <span class="op">=</span> <span class="st">&#39;YES&#39;</span>, TIMED <span class="op">=</span> <span class="st">&#39;YES&#39;</span> </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> NAME <span class="kw">LIKE</span> <span class="st">&#39;statement/%&#39;</span>;</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">-- Enable statement history and current event consumers</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> performance_schema.setup_consumers </span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> ENABLED <span class="op">=</span> <span class="st">&#39;YES&#39;</span> </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> NAME <span class="kw">LIKE</span> <span class="st">&#39;events_statements_%&#39;</span>;</span></code></pre></div>
+<h2 id="step-3-monitor-currently-running-queries">Step 3: Monitor
+Currently Running Queries</h2>
+<p>To view queries that are executing on the server right now along with
+their current execution times, query the
+<code>events_statements_current</code> table.</p>
+<p>MySQL stores time in picoseconds. To make the execution times
+readable, divide the <code>TIMER_WAIT</code> column by
+<code>1000000000000</code> to convert it to seconds:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    THREAD_ID,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    EVENT_ID,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    SQL_TEXT,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROUND</span>(TIMER_WAIT <span class="op">/</span> <span class="dv">1000000000000</span>, <span class="dv">4</span>) <span class="kw">AS</span> duration_seconds,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    CURRENT_SCHEMA</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    performance_schema.events_statements_current</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    SQL_TEXT <span class="kw">IS</span> <span class="kw">NOT</span> <span class="kw">NULL</span> </span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> END_EVENT_ID <span class="kw">IS</span> <span class="kw">NULL</span>;</span></code></pre></div>
+<p>This query filters out idle connections and returns only active
+queries and their elapsed time in seconds.</p>
+<h2 id="step-4-identify-slow-queries-in-statement-history">Step 4:
+Identify Slow Queries in Statement History</h2>
+<p>To inspect recently completed queries and identify which ones took
+the longest to run, query the <code>events_statements_history</code> or
+<code>events_statements_history_long</code> tables:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    THREAD_ID,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    SQL_TEXT,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROUND</span>(TIMER_WAIT <span class="op">/</span> <span class="dv">1000000000000</span>, <span class="dv">4</span>) <span class="kw">AS</span> duration_seconds,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    ROWS_EXAMINED,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ROWS_SENT</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> </span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    performance_schema.events_statements_history</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> </span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    SQL_TEXT <span class="kw">IS</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> </span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    TIMER_WAIT <span class="kw">DESC</span> </span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">10</span>;</span></code></pre></div>
+<p>This query displays the top 10 most recent slow queries, including
+the number of rows examined versus the rows sent, which helps diagnose
+poor indexing.</p>
+<h2 id="step-5-analyze-query-performance-statistics-by-digest">Step 5:
+Analyze Query Performance Statistics by Digest</h2>
+<p>MySQL groups similar queries together (abstracting literal values)
+into "digests." Querying the
+<code>events_statements_summary_by_digest</code> table allows you to see
+aggregated execution statistics for query patterns over time:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    SCHEMA_NAME,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    DIGEST_TEXT,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    COUNT_STAR <span class="kw">AS</span> execution_count,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROUND</span>(SUM_TIMER_WAIT <span class="op">/</span> <span class="dv">1000000000000</span>, <span class="dv">2</span>) <span class="kw">AS</span> total_latency_sec,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROUND</span>(AVG_TIMER_WAIT <span class="op">/</span> <span class="dv">1000000000000</span>, <span class="dv">4</span>) <span class="kw">AS</span> avg_latency_sec,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ROUND</span>(MAX_TIMER_WAIT <span class="op">/</span> <span class="dv">1000000000000</span>, <span class="dv">4</span>) <span class="kw">AS</span> max_latency_sec,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    SUM_ROWS_EXAMINED <span class="kw">AS</span> total_rows_examined</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    performance_schema.events_statements_summary_by_digest</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    SCHEMA_NAME <span class="kw">IS</span> <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> </span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    SUM_TIMER_WAIT <span class="kw">DESC</span> </span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">10</span>;</span></code></pre></div>
+<p>This output highlights which query structures consume the most
+aggregate database time, allowing you to prioritize optimization efforts
+on the queries that impact system performance the most.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

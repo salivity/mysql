@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding secure_file_priv in MySQL Security - mysql</title>
+    <meta name="description" content="The securefilepriv server variable is a critical security feature in MySQL that controls the directory paths from which data can be imported or exported. This article explains the significance of securefilepriv in protecting database servers from unautho">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/understanding-secure-file-priv-in-mysql-security">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Understanding secure_file_priv in MySQL Security - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/understanding-secure-file-priv-in-mysql-security" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="The securefilepriv server variable is a critical security feature in MySQL that controls the directory paths from which data can be imported or exported. This article explains the significance of securefilepriv in protecting database servers from unautho" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="understanding-secure_file_priv-in-mysql-security">Understanding
+secure_file_priv in MySQL Security</h1>
+<p>The <code>secure_file_priv</code> server variable is a critical
+security feature in MySQL that controls the directory paths from which
+data can be imported or exported. This article explains the significance
+of <code>secure_file_priv</code> in protecting database servers from
+unauthorized file access, details its three operational states, and
+outlines how it prevents malicious exploits such as SQL injection and
+directory traversal attacks.</p>
+<h2 id="what-is-secure_file_priv">What is secure_file_priv?</h2>
+<p>In MySQL, users can import data from external files into tables using
+the <code>LOAD DATA INFILE</code> statement, or export query results to
+the server's file system using the <code>SELECT ... INTO OUTFILE</code>
+statement.</p>
+<p>Without restrictions, these operations pose a massive security risk.
+The <code>secure_file_priv</code> system variable mitigates this risk by
+limiting the effect of data import and export operations to a specific,
+designated directory on the server.</p>
+<h2 id="the-three-configuration-states">The Three Configuration
+States</h2>
+<p>The <code>secure_file_priv</code> variable can be configured in one
+of three ways, each carrying different security implications:</p>
+<ul>
+<li><strong>NULL:</strong> When set to <code>NULL</code>, the server
+disables all import and export operations. This is the default and most
+secure setting for environments where file transfers are not
+required.</li>
+<li><strong>Specific Directory Path (e.g.,
+<code>/var/lib/mysql-files/</code>):</strong> When set to a specific
+directory path, the server restricts all <code>LOAD DATA INFILE</code>
+and <code>SELECT ... INTO OUTFILE</code> operations to that directory
+only. The directory must exist, and the MySQL server process must have
+the appropriate operating system-level permissions to read and write
+within it.</li>
+<li><strong>Empty String (<code>""</code>):</strong> When left blank,
+the variable has no effect. The MySQL server is permitted to read and
+write files anywhere on the file system, provided the underlying
+operating system user running MySQL has the necessary permissions. This
+setting is highly discouraged in production environments.</li>
+</ul>
+<h2 id="why-secure_file_priv-is-crucial-for-data-security">Why
+secure_file_priv is Crucial for Data Security</h2>
+<h3 id="1-mitigation-of-sql-injection-exploits">1. Mitigation of SQL
+Injection Exploits</h3>
+<p>SQL injection (SQLi) is one of the most common database
+vulnerabilities. If an attacker successfully injects SQL commands into
+an application, they could attempt to read sensitive operating system
+files (such as <code>/etc/passwd</code> or configuration files) using
+the <code>LOAD_FILE()</code> function. Alternatively, they might attempt
+to write a malicious script, such as a PHP web shell, to the web
+server's root directory using <code>INTO OUTFILE</code>. Properly
+configuring <code>secure_file_priv</code> prevents these actions by
+strictly blocking file operations outside the designated folder, even if
+an attacker gains administrative database access.</p>
+<h3 id="2-prevention-of-directory-traversal">2. Prevention of Directory
+Traversal</h3>
+<p>By locking file operations to a specific directory,
+<code>secure_file_priv</code> prevents directory traversal attacks.
+Users cannot use relative paths (like <code>../../</code>) to navigate
+out of the permitted directory to access or overwrite system-critical
+files.</p>
+<h3 id="3-separation-of-duties-and-operating-system-isolation">3.
+Separation of Duties and Operating System Isolation</h3>
+<p>Restricting file exports to a dedicated directory allows system
+administrators to implement strict Operating System (OS) permissions.
+Administrators can restrict access to the export folder so that only
+authorized system users or automated scripts can retrieve the exported
+data, preventing unauthorized local users from viewing sensitive
+database dumps.</p>
+<h2 id="checking-and-configuring-secure_file_priv">Checking and
+Configuring secure_file_priv</h2>
+<p>To check the current status of the variable on your MySQL server,
+execute the following SQL command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>SHOW VARIABLES <span class="kw">LIKE</span> <span class="st">&#39;secure_file_priv&#39;</span>;</span></code></pre></div>
+<p>To modify this variable, you must edit the MySQL configuration file
+(<code>my.cnf</code> on Linux or <code>my.ini</code> on Windows) under
+the <code>[mysqld]</code> section:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[mysqld]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">secure_file_priv</span><span class="ot">=</span><span class="st">&quot;/var/lib/mysql-files&quot;</span></span></code></pre></div>
+<p>Because <code>secure_file_priv</code> is a read-only variable at
+runtime, any changes made to the configuration file require a restart of
+the MySQL service to take effect.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

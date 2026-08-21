@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Troubleshoot and Fix MySQL High CPU Usage - mysql</title>
+    <meta name="description" content="High CPU usage in MySQL can severely degrade database performance and cause application latency. This guide provides a straightforward approach to identifying the root causes of MySQL CPU spikes—such as inefficient queries, missing indexes, and misconf">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/troubleshoot-and-fix-mysql-high-cpu-usage">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Troubleshoot and Fix MySQL High CPU Usage - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/troubleshoot-and-fix-mysql-high-cpu-usage" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="High CPU usage in MySQL can severely degrade database performance and cause application latency. This guide provides a straightforward approach to identifying the root causes of MySQL CPU spikes—such as inefficient queries, missing indexes, and misconf" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="troubleshoot-and-fix-mysql-high-cpu-usage">Troubleshoot and Fix
+MySQL High CPU Usage</h1>
+<p>High CPU usage in MySQL can severely degrade database performance and
+cause application latency. This guide provides a straightforward
+approach to identifying the root causes of MySQL CPU spikes—such as
+inefficient queries, missing indexes, and misconfigured settings—and
+outlines actionable steps to resolve them and restore system
+stability.</p>
+<h2 id="identify-the-cause-of-high-cpu">Identify the Cause of High
+CPU</h2>
+<p>To resolve high CPU usage, you must first pinpoint what MySQL is
+doing when the spike occurs. Use the following diagnostic steps:</p>
+<h3 id="1-check-active-queries">1. Check Active Queries</h3>
+<p>Run the following command in the MySQL command line to see which
+queries are currently running and how long they have been executing:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>SHOW <span class="kw">FULL</span> PROCESSLIST;</span></code></pre></div>
+<p>Look for queries in the <code>Query</code> state that have a high
+<code>Time</code> value. If you see numerous queries performing "Sending
+data" or "Creating sort index," these are likely candidates causing the
+CPU spike.</p>
+<h3 id="2-enable-and-analyze-the-slow-query-log">2. Enable and Analyze
+the Slow Query Log</h3>
+<p>The slow query log captures queries that take longer than a specified
+threshold to execute. Enable it by adding these lines to your MySQL
+configuration file (<code>my.cnf</code> or <code>my.ini</code>):</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">slow_query_log </span><span class="ot">=</span><span class="st"> </span><span class="dv">1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">slow_query_log_file </span><span class="ot">=</span><span class="st"> /var/log/mysql/mysql-slow.log</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="dt">long_query_time </span><span class="ot">=</span><span class="st"> </span><span class="dv">1</span></span></code></pre></div>
+<p>Once populated, use the <code>mysqldumpslow</code> tool to parse the
+log and identify the most frequent or resource-intensive queries.</p>
+<h3 id="3-monitor-engine-status">3. Monitor Engine Status</h3>
+<p>Analyze internal InnoDB metrics to check for locking issues or thread
+bottlenecks:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>SHOW ENGINE INNODB STATUS;</span></code></pre></div>
+<p>Search the output for "SEMAPHORES" to see if threads are waiting for
+OS locks, which frequently drives up CPU usage.</p>
+<hr />
+<h2 id="resolve-high-cpu-usage">Resolve High CPU Usage</h2>
+<p>Once you have identified the culprit queries or system bottlenecks,
+apply these solutions to resolve the issue.</p>
+<h3 id="1-optimize-inefficient-queries">1. Optimize Inefficient
+Queries</h3>
+<p>Most MySQL CPU issues stem from poorly written queries that scan too
+many rows.</p>
+<ul>
+<li><strong>Use EXPLAIN:</strong> Run <code>EXPLAIN</code> before your
+problematic query to analyze its execution plan.</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPLAIN</span> <span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> users <span class="kw">WHERE</span> email <span class="op">=</span> <span class="st">&#39;test@example.com&#39;</span>;</span></code></pre></div>
+<ul>
+<li><strong>Add Indexes:</strong> If the <code>type</code> column in the
+<code>EXPLAIN</code> output shows <code>ALL</code>, MySQL is performing
+a full table scan. Create targeted indexes on columns used in
+<code>WHERE</code>, <code>JOIN</code>, <code>ORDER BY</code>, and
+<code>GROUP BY</code> clauses to reduce CPU overhead.</li>
+</ul>
+<h3 id="2-optimize-mysql-configuration">2. Optimize MySQL
+Configuration</h3>
+<p>Inadequate memory allocation forces MySQL to read data from the disk
+frequently, increasing CPU wait times. Adjust these key parameters in
+your configuration file:</p>
+<ul>
+<li><strong><code>innodb_buffer_pool_size</code></strong>: Set this to
+50% to 80% of your system's total RAM on a dedicated database server to
+ensure data and indexes are cached in memory.</li>
+<li><strong><code>innodb_log_file_size</code></strong>: Ensure write
+logs are large enough (typically 25% of the buffer pool size) to avoid
+frequent flushing checkpoints that saturate the CPU.</li>
+<li><strong><code>max_connections</code></strong>: Limit the maximum
+number of concurrent connections to prevent thread contention from
+overwhelming the processor.</li>
+</ul>
+<h3 id="3-manage-connection-spikes">3. Manage Connection Spikes</h3>
+<p>A sudden influx of database connections can exhaust CPU resources due
+to connection establishment overhead.</p>
+<ul>
+<li>Implement connection pooling in your application layer (using tools
+like ProxySQL or application-level pools) to reuse active
+connections.</li>
+<li>Verify that your application properly closes database connections
+after executing queries.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Session vs Global Variables Explained - mysql</title>
+    <meta name="description" content="MySQL utilizes two distinct scopes for its configuration variables—global and session—to balance overall server performance with individual client connection requirements. This article explains the operational differences between session-level and gl">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-session-vs-global-variables-explained">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Session vs Global Variables Explained - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-session-vs-global-variables-explained" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="MySQL utilizes two distinct scopes for its configuration variables—global and session—to balance overall server performance with individual client connection requirements. This article explains the operational differences between session-level and gl" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-session-vs-global-variables-explained">MySQL Session vs
+Global Variables Explained</h1>
+<p>MySQL utilizes two distinct scopes for its configuration
+variables—global and session—to balance overall server performance with
+individual client connection requirements. This article explains the
+operational differences between session-level and global-level variables
+in MySQL, how they interact, and how database administrators can manage
+them to optimize database behavior.</p>
+<h2 id="global-variables">Global Variables</h2>
+<p>Global variables control the overall operation of the MySQL server.
+When the MySQL server starts, it initializes these variables using
+default values or configurations specified in the option files (such as
+<code>my.cnf</code> or <code>my.ini</code>).</p>
+<ul>
+<li><strong>Scope:</strong> Global variables affect the entire server
+and apply to all connections.</li>
+<li><strong>Privileges:</strong> Changing a global variable requires
+administrative privileges (typically the <code>SUPER</code> or
+<code>SYSTEM_VARIABLES_ADMIN</code> privilege).</li>
+<li><strong>Syntax:</strong> To modify a global variable at runtime, use
+the <code>GLOBAL</code> keyword:
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> <span class="kw">GLOBAL</span> max_connections <span class="op">=</span> <span class="dv">500</span>;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Or using the double-at syntax</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> @@global.max_connections <span class="op">=</span> <span class="dv">500</span>;</span></code></pre></div></li>
+<li><strong>Persistence:</strong> Standard <code>SET GLOBAL</code>
+commands only change the variable in memory. If the server restarts,
+these changes are lost unless they are also updated in the configuration
+file. In MySQL 8.0 and later, you can use <code>SET PERSIST</code> to
+write the change to a <code>mysqld-auto.cnf</code> file, ensuring the
+setting survives a restart:
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> PERSIST max_connections <span class="op">=</span> <span class="dv">500</span>;</span></code></pre></div></li>
+</ul>
+<h2 id="session-variables">Session Variables</h2>
+<p>Session variables apply strictly to individual client connections.
+They allow developers and administrators to customize the database
+behavior for a specific task or query session without affecting other
+connected users.</p>
+<ul>
+<li><strong>Scope:</strong> Session variables are active only for the
+duration of the current connection. Once the client disconnects, the
+session-specific settings are destroyed.</li>
+<li><strong>Privileges:</strong> Most session variables can be modified
+by any user without administrative privileges.</li>
+<li><strong>Syntax:</strong> To modify a session variable, use the
+<code>SESSION</code> keyword, or simply omit the scope keyword, as
+<code>SESSION</code> is the default:
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> <span class="kw">SESSION</span> sql_mode <span class="op">=</span> <span class="st">&#39;STRICT_TRANS_TABLES&#39;</span>;</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Or simply</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> sql_mode <span class="op">=</span> <span class="st">&#39;STRICT_TRANS_TABLES&#39;</span>;</span></code></pre></div></li>
+</ul>
+<h2 id="how-global-and-session-variables-interact">How Global and
+Session Variables Interact</h2>
+<p>When a new client connects to MySQL, the server automatically
+initializes the client's session variables by copying the values from
+the currently active global variables.</p>
+<p>Once the session is established, changes made to the global variables
+will not affect any currently active sessions. The new global values
+will only apply to connections created <em>after</em> the change was
+made. Conversely, changing a session variable only impacts the current
+connection and has zero effect on other active sessions or the global
+defaults.</p>
+<h2 id="not-all-variables-exist-in-both-scopes">Not All Variables Exist
+in Both Scopes</h2>
+<p>It is important to note that not all MySQL system variables can be
+set at both levels:</p>
+<ul>
+<li><strong>Global-Only:</strong> Some variables regulate resources that
+belong to the entire server, such as <code>max_connections</code>,
+<code>innodb_buffer_pool_size</code>, or <code>port</code>. These cannot
+be set at the session level.</li>
+<li><strong>Session-Only:</strong> Some variables are strictly
+context-dependent for a specific execution, such as
+<code>last_insert_id</code> or <code>pseudo_thread_id</code>.</li>
+<li><strong>Both Scopes:</strong> Many variables exist in both scopes,
+such as <code>sql_mode</code>, <code>character_set_client</code>, and
+<code>join_buffer_size</code>. This allows a global baseline to be set
+while letting individual sessions override the setting when executing
+specific queries.</li>
+</ul>
+<p>To check the current value of a variable at either scope, use the
+<code>SHOW VARIABLES</code> statement with the appropriate modifier:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>SHOW <span class="kw">GLOBAL</span> VARIABLES <span class="kw">LIKE</span> <span class="st">&#39;join_buffer_size&#39;</span>;</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>SHOW <span class="kw">SESSION</span> VARIABLES <span class="kw">LIKE</span> <span class="st">&#39;join_buffer_size&#39;</span>;</span></code></pre></div></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

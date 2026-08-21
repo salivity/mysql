@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Server Architecture Components - mysql</title>
+    <meta name="description" content="This article provides an overview of the key architectural components of a standard MySQL database server. It explains how the server manages client connections, parses and optimizes SQL queries, and utilizes a pluggable storage engine layer to store and">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-server-architecture-components">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Server Architecture Components - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-server-architecture-components" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article provides an overview of the key architectural components of a standard MySQL database server. It explains how the server manages client connections, parses and optimizes SQL queries, and utilizes a pluggable storage engine layer to store and" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-server-architecture-components">MySQL Server Architecture
+Components</h1>
+<p>This article provides an overview of the key architectural components
+of a standard MySQL database server. It explains how the server manages
+client connections, parses and optimizes SQL queries, and utilizes a
+pluggable storage engine layer to store and retrieve data
+efficiently.</p>
+<h2 id="1-connection-and-thread-pool-layer">1. Connection and Thread
+Pool Layer</h2>
+<p>At the topmost layer, MySQL handles client connections,
+authentication, and security. When a client connects to the database,
+the server allocates a dedicated thread to handle that connection's
+requests. To minimize the overhead of constantly creating and destroying
+threads, MySQL uses a <strong>Thread Pool</strong> to reuse existing
+threads for new connections. This layer also verifies user credentials
+and manages access privileges.</p>
+<h2 id="2-sql-interface">2. SQL Interface</h2>
+<p>The SQL Interface is the entry point for executing commands. It
+receives SQL statements from the client and supports a wide range of
+database operations, including Data Definition Language (DDL), Data
+Manipulation Language (DML), stored procedures, triggers, and views.</p>
+<h2 id="3-parser-and-preprocessor">3. Parser and Preprocessor</h2>
+<p>Once a query passes the SQL Interface, it enters the
+<strong>Parser</strong>. The parser breaks down the SQL statement into
+tokens and builds a logical syntax tree to ensure the query is
+syntactically correct.</p>
+<p>The <strong>Preprocessor</strong> then takes this syntax tree and
+performs semantic validation. It checks whether the requested tables and
+columns actually exist and verifies that the user has the appropriate
+privileges to access them.</p>
+<h2 id="4-query-optimizer">4. Query Optimizer</h2>
+<p>The <strong>Optimizer</strong> is responsible for determining the
+most efficient path to execute the parsed SQL query. It evaluates
+multiple execution plans and estimates their cost based on system
+statistics. Key tasks performed by the optimizer include:</p>
+<ul>
+<li>Deciding which indexes to use.</li>
+<li>Determining the join order of tables.</li>
+<li>Rewriting subqueries into more efficient structures.</li>
+</ul>
+<p>Once the optimal path is selected, the optimizer generates an
+execution plan that is passed to the execution engine.</p>
+<h2 id="5-caches-and-buffers">5. Caches and Buffers</h2>
+<p>To maximize read and write performance, MySQL relies heavily on
+memory buffers:</p>
+<ul>
+<li><strong>Buffer Pool (InnoDB):</strong> Stores cached table data and
+indexes in memory to reduce disk I/O.</li>
+<li><strong>Redo Log Buffer:</strong> Temporarily stores transaction
+data before flushing it to the physical redo log files.</li>
+<li><strong>Key Buffer:</strong> Used by the MyISAM engine to cache
+index blocks.</li>
+</ul>
+<p><em>Note: The traditional Query Cache, which cached the results of
+SELECT statements, was deprecated and removed in modern MySQL versions
+(MySQL 8.0+) due to scalability bottlenecks.</em></p>
+<h2 id="6-pluggable-storage-engine-layer">6. Pluggable Storage Engine
+Layer</h2>
+<p>One of MySQL's most distinctive architectural features is its
+<strong>Pluggable Storage Engine API</strong>. This layer acts as an
+abstraction between the SQL execution engine and the physical storage.
+Different storage engines can be used for different tables depending on
+application needs:</p>
+<ul>
+<li><strong>InnoDB:</strong> The default transaction-safe
+(ACID-compliant) engine that supports row-level locking, foreign keys,
+and crash recovery.</li>
+<li><strong>MyISAM:</strong> A non-transactional engine optimized for
+high-speed read operations and full-text indexing, though it only
+supports table-level locking.</li>
+<li><strong>Memory:</strong> Stores all data in RAM for extremely fast,
+temporary access.</li>
+</ul>
+<p>The SQL optimizer communicates with these engines through a standard
+API to fetch rows, insert data, and update indexes.</p>
+<h2 id="7-physical-storage-and-log-files">7. Physical Storage and Log
+Files</h2>
+<p>At the lowest level lies the physical storage, which consists of the
+files on the server's hard drive or SSD. This includes:</p>
+<ul>
+<li><strong>Data Files:</strong> The physical files containing
+tablespaces, tables, and indexes (such as <code>.ibd</code> files for
+InnoDB).</li>
+<li><strong>Redo Logs:</strong> Ensure durability (ACID compliance) by
+recording changes that have not yet been written to the data files.</li>
+<li><strong>Undo Logs:</strong> Store prior versions of data to support
+transaction rollbacks and Multi-Version Concurrency Control (MVCC).</li>
+<li><strong>Binary Logs (Binlog):</strong> Record all changes to the
+database structure and content, which is essential for replication and
+point-in-time recovery.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

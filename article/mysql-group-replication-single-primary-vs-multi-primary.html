@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Group Replication: Single-Primary vs Multi-Primary - mysql</title>
+    <meta name="description" content="This article explains the core differences between single-primary and multi-primary modes in MySQL Group Replication. It covers how each mode manages write operations, handles transaction conflicts, impacts application design, and behaves during node fai">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-group-replication-single-primary-vs-multi-primary">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Group Replication: Single-Primary vs Multi-Primary - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-group-replication-single-primary-vs-multi-primary" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains the core differences between single-primary and multi-primary modes in MySQL Group Replication. It covers how each mode manages write operations, handles transaction conflicts, impacts application design, and behaves during node fai" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-group-replication-single-primary-vs-multi-primary">MySQL
+Group Replication: Single-Primary vs Multi-Primary</h1>
+<p>This article explains the core differences between single-primary and
+multi-primary modes in MySQL Group Replication. It covers how each mode
+manages write operations, handles transaction conflicts, impacts
+application design, and behaves during node failures, allowing you to
+choose the best configuration for your database infrastructure.</p>
+<h2 id="what-is-single-primary-mode">What is Single-Primary Mode?</h2>
+<p>In single-primary mode, MySQL Group Replication designates only one
+member of the group as the primary node. This primary node is the only
+member that configures itself to accept write operations (read-write
+mode). All other members in the group are automatically configured as
+read-only.</p>
+<p>If the primary node fails, the remaining members automatically elect
+a new primary. This election is based on factors such as the MySQL
+server version of the members and their UUIDs. Single-primary mode is
+the default configuration for MySQL Group Replication because it behaves
+similarly to traditional master-slave replication, making it highly
+compatible with existing applications.</p>
+<h2 id="what-is-multi-primary-mode">What is Multi-Primary Mode?</h2>
+<p>In multi-primary mode, every member of the group can accept write
+operations simultaneously. There is no single primary node; instead, all
+nodes operate in read-write mode.</p>
+<p>When a transaction is executed on one node, it must be agreed upon by
+the entire group before it commits. Because writes can occur on
+different nodes at the same time, MySQL Group Replication uses an
+optimistic replication model. Transactions are checked for conflicts
+against other concurrent transactions across the group, and any
+conflicting transactions are rolled back.</p>
+<h2 id="key-differences">Key Differences</h2>
+<h3 id="1-write-allocation-and-load-balancing">1. Write Allocation and
+Load Balancing</h3>
+<ul>
+<li><strong>Single-Primary:</strong> All writes must be routed to the
+single primary node. The secondary nodes can only handle read queries.
+This simplifies application routing but limits write scalability to a
+single machine.</li>
+<li><strong>Multi-Primary:</strong> Write queries can be distributed
+across all nodes in the group. This allows applications to write to the
+closest or least busy node.</li>
+</ul>
+<h3 id="2-conflict-detection-and-resolution">2. Conflict Detection and
+Resolution</h3>
+<ul>
+<li><strong>Single-Primary:</strong> Because only one node accepts
+writes, write conflicts between nodes are impossible. Transactions are
+executed sequentially on the primary, preventing concurrent modification
+conflicts.</li>
+<li><strong>Multi-Primary:</strong> Concurrent writes can lead to
+conflicts if two nodes attempt to modify the same row at the same time.
+MySQL Group Replication resolves this using a "first-committer-wins"
+rule. The transaction that reaches consensus first is committed, while
+the conflicting transaction on the other node is aborted and rolled
+back.</li>
+</ul>
+<h3 id="3-feature-limitations-and-data-safety">3. Feature Limitations
+and Data Safety</h3>
+<ul>
+<li><strong>Single-Primary:</strong> Supports all standard MySQL
+features, including auto-increment locks, foreign keys with cascading
+actions, and Data Definition Language (DDL) statements without special
+restrictions.</li>
+<li><strong>Multi-Primary:</strong> Has strict limitations to prevent
+data inconsistency.
+<ul>
+<li>Table locks and named locks are not supported.</li>
+<li>Foreign keys with cascading deletes are not recommended, as they can
+cause undetected conflicts.</li>
+<li>Concurrent DDL operations on different nodes are not supported and
+can lead to schema inconsistencies.</li>
+</ul></li>
+</ul>
+<h3 id="4-application-complexity">4. Application Complexity</h3>
+<ul>
+<li><strong>Single-Primary:</strong> Easy to integrate. The application
+only needs to distinguish between one read-write connection and multiple
+read-only connections.</li>
+<li><strong>Multi-Primary:</strong> Requires careful application design.
+Developers must write application logic to handle transaction rollbacks
+caused by replication conflicts, and load balancers must be configured
+to distribute writes safely across nodes.</li>
+</ul>
+<h2 id="summary-of-differences">Summary of Differences</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Feature</th>
+<th style="text-align: left;">Single-Primary Mode</th>
+<th style="text-align: left;">Multi-Primary Mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Active Write Nodes</strong></td>
+<td style="text-align: left;">One</td>
+<td style="text-align: left;">All</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Default Mode</strong></td>
+<td style="text-align: left;">Yes</td>
+<td style="text-align: left;">No</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Write Conflict Risk</strong></td>
+<td style="text-align: left;">None</td>
+<td style="text-align: left;">High (requires conflict resolution)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Handling of
+Conflicts</strong></td>
+<td style="text-align: left;">N/A</td>
+<td style="text-align: left;">First-committer-wins (aborts losing
+transaction)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>DDL Limitations</strong></td>
+<td style="text-align: left;">Standard MySQL rules</td>
+<td style="text-align: left;">Strict (no concurrent DDL on different
+nodes)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Foreign Keys with
+Cascade</strong></td>
+<td style="text-align: left;">Fully supported</td>
+<td style="text-align: left;">Not recommended</td>
+</tr>
+</tbody>
+</table></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

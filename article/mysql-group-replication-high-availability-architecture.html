@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Group Replication High Availability Architecture - mysql</title>
+    <meta name="description" content="This article explores the underlying architecture of MySQL Group Replication (MGR), a native high-availability solution designed for MySQL databases. It examines how MGR utilizes a shared-nothing, replicated state machine model, relies on the Paxos conse">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-group-replication-high-availability-architecture">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Group Replication High Availability Architecture - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-group-replication-high-availability-architecture" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explores the underlying architecture of MySQL Group Replication (MGR), a native high-availability solution designed for MySQL databases. It examines how MGR utilizes a shared-nothing, replicated state machine model, relies on the Paxos conse" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-group-replication-high-availability-architecture">MySQL
+Group Replication High Availability Architecture</h1>
+<p>This article explores the underlying architecture of MySQL Group
+Replication (MGR), a native high-availability solution designed for
+MySQL databases. It examines how MGR utilizes a shared-nothing,
+replicated state machine model, relies on the Paxos consensus protocol
+for message ordering, performs optimistic conflict detection through
+transaction certification, and manages dynamic cluster membership to
+guarantee fault tolerance and data consistency.</p>
+<h2 id="replicated-state-machine-model">Replicated State Machine
+Model</h2>
+<p>MySQL Group Replication is built on a replicated state machine
+architecture. In this model, every database server (node) in the
+replication group represents an independent state machine. Each node
+contains a complete copy of the database and executes the same sequence
+of transactions in the same order.</p>
+<p>To maintain identical state across all nodes, the system processes
+transactions through a database state machine replication flow:</p>
+<ol type="1">
+<li><strong>Local Execution:</strong> A client issues a transaction to a
+local node. The node executes the transaction locally up to the commit
+phase, generating a "write set" containing the identifiers of the
+modified rows and their primary keys.</li>
+<li><strong>Global Ordering:</strong> Before committing, the local node
+broadcasts the write set and transaction metadata to the group.</li>
+<li><strong>Certification:</strong> All nodes receive the transaction in
+the exact same sequence and run a deterministic conflict detection
+algorithm.</li>
+<li><strong>Apply/Rollback:</strong> If the transaction passes
+certification, all nodes commit it. If it fails, the transaction is
+rolled back on the originating node and discarded by the others.</li>
+</ol>
+<h2 id="group-communication-system-gcs-and-paxos-consensus">Group
+Communication System (GCS) and Paxos Consensus</h2>
+<p>The foundation of MGR's consistency is the Group Communication System
+(GCS) protocol, which is implemented via an engineered Paxos consensus
+algorithm (XCom). The GCS provides two critical guarantees:</p>
+<ul>
+<li><strong>Total Order:</strong> All messages (transactions) are
+delivered to all group members in the exact same sequence.</li>
+<li><strong>Safe Delivery:</strong> A message is only delivered to the
+database engine once a majority of group members (a quorum) have
+acknowledged receiving it.</li>
+</ul>
+<p>This consensus-based communication ensures that network partitions do
+not lead to data divergence. If a network split occurs, only the
+partition containing a majority of the original nodes (e.g., 3 out of 5)
+can continue to accept writes, while the minority partition
+automatically transitions to a read-only or blocked state.</p>
+<h2 id="transaction-certification-and-conflict-resolution">Transaction
+Certification and Conflict Resolution</h2>
+<p>Because MySQL Group Replication allows transactions to execute
+optimistically before global agreement is reached, conflicts can arise
+when concurrent transactions on different nodes attempt to modify the
+same data. MGR resolves this through a distributed certification
+process.</p>
+<p>Every node maintains a certification index containing the transaction
+identifiers and write-set signatures of recently committed transactions.
+When a transaction's write set is delivered via Paxos:</p>
+<ol type="1">
+<li>The certification engine compares the transaction's read-set version
+(the database state when the transaction started) with the version of
+the data currently committed in the certification index.</li>
+<li>If the data has been modified by a concurrent transaction that
+committed first, a conflict is detected.</li>
+<li>The transaction that arrived first via Paxos order is certified and
+committed, while the conflicting concurrent transaction is rejected and
+rolled back.</li>
+</ol>
+<p>This deterministic certification occurs independently on every node.
+Because all nodes process the same transactions in the same order, they
+all reach the exact same certification decision without requiring
+additional network round trips.</p>
+<h2 id="group-membership-and-failure-detection">Group Membership and
+Failure Detection</h2>
+<p>MGR features a built-in group membership service that dynamically
+tracks the status of all active servers in the cluster.</p>
+<ul>
+<li><strong>Failure Detector:</strong> Nodes exchange periodic heartbeat
+messages. If a node fails to send heartbeats within a configured
+timeout, the group suspects a failure.</li>
+<li><strong>Reconfiguration:</strong> Upon detecting a node failure, or
+when a new node joins, the remaining nodes initiate a membership
+reconfiguration (a "view change"). This view change must be agreed upon
+by a Paxos consensus majority.</li>
+<li><strong>Distributed Recovery:</strong> When a new or recovering node
+joins the group, it automatically selects an existing member as a donor.
+It then uses combination of asynchronous binary log transfers and state
+snapshots to catch up to the current group state before transitioning to
+an active, serving status.</li>
+</ul>
+<h2 id="architectural-deployment-modes">Architectural Deployment
+Modes</h2>
+<p>MySQL Group Replication operates in one of two structural
+configurations:</p>
+<h3 id="single-primary-mode">Single-Primary Mode</h3>
+<p>In this configuration, only one designated node (the primary) is
+allowed to accept write transactions. The remaining nodes (secondaries)
+are automatically set to read-only mode. If the primary node fails, the
+group membership service automatically detects the loss and elects a new
+primary from the surviving secondaries based on predefined criteria,
+such as node UUID or MySQL version eligibility.</p>
+<h3 id="multi-primary-mode">Multi-Primary Mode</h3>
+<p>In this configuration, all nodes in the replication group can
+simultaneously accept read and write transactions. This mode relies
+heavily on the certification process to detect and rollback concurrent
+write conflicts. While multi-primary mode increases write path
+redundancy, it requires careful schema design, such as mandatory primary
+keys and proper constraint handling, to minimize transaction
+rollbacks.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

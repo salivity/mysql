@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Use MySQL ANALYZE TABLE to Update Key Distributions - mysql</title>
+    <meta name="description" content="Over time, frequent insert, update, and delete operations can cause MySQL's query optimizer to make suboptimal execution choices due to outdated index statistics. This article provides a direct guide on how to use the ANALYZE TABLE statement in MySQL to">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-to-use-mysql-analyze-table-to-update-key-distributions">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How to Use MySQL ANALYZE TABLE to Update Key Distributions - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-to-use-mysql-analyze-table-to-update-key-distributions" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="Over time, frequent insert, update, and delete operations can cause MySQL's query optimizer to make suboptimal execution choices due to outdated index statistics. This article provides a direct guide on how to use the ANALYZE TABLE statement in MySQL to" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-to-use-mysql-analyze-table-to-update-key-distributions">How
+to Use MySQL ANALYZE TABLE to Update Key Distributions</h1>
+<p>Over time, frequent insert, update, and delete operations can cause
+MySQL's query optimizer to make suboptimal execution choices due to
+outdated index statistics. This article provides a direct guide on how
+to use the <code>ANALYZE TABLE</code> statement in MySQL to update key
+distributions, ensuring the query planner has accurate cardinality data
+to optimize query performance. We will cover the basic syntax, how the
+statement impacts different storage engines, and how to interpret the
+results.</p>
+<h2 id="why-key-distribution-matters">Why Key Distribution Matters</h2>
+<p>MySQL uses index cardinality (the uniqueness of data in a column) to
+determine the most efficient execution path for a query. If the
+optimizer believes an index has low cardinality, it may completely
+ignore the index and perform a slow, full table scan instead.</p>
+<p>Running <code>ANALYZE TABLE</code> forces MySQL to analyze the key
+distribution of the specified table, recalculating the cardinality
+statistics and saving them to the system tables. This helps the
+optimizer make better decisions when selecting indexes for
+<code>WHERE</code> clauses, joins, and sorting operations.</p>
+<h2 id="basic-syntax">Basic Syntax</h2>
+<p>To update the key distribution for a single table, use the following
+SQL syntax:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ANALYZE</span> <span class="kw">TABLE</span> table_name;</span></code></pre></div>
+<p>You can also analyze multiple tables at once by separating the table
+names with commas:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ANALYZE</span> <span class="kw">TABLE</span> orders, customers, inventory;</span></code></pre></div>
+<p>For partitioned tables, you can analyze specific partitions to save
+time and resources:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ANALYZE</span> <span class="kw">TABLE</span> orders <span class="kw">ANALYZE</span> <span class="kw">PARTITION</span> p2023, p2024;</span></code></pre></div>
+<h2 id="understanding-the-output">Understanding the Output</h2>
+<p>When you execute an <code>ANALYZE TABLE</code> statement, MySQL
+returns a result set with four columns:</p>
+<ul>
+<li><strong>Table</strong>: The name of the table analyzed.</li>
+<li><strong>Op</strong>: The operation performed (always
+<code>analyze</code>).</li>
+<li><strong>Msg_type</strong>: The status level of the message (such as
+<code>status</code>, <code>info</code>, <code>note</code>,
+<code>warning</code>, or <code>error</code>).</li>
+<li><strong>Msg_text</strong>: The diagnostic message. If successful,
+this typically displays <code>OK</code>.</li>
+</ul>
+<p>An example output looks like this:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Table</th>
+<th style="text-align: left;">Op</th>
+<th style="text-align: left;">Msg_type</th>
+<th style="text-align: left;">Msg_text</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">mydb.orders</td>
+<td style="text-align: left;">analyze</td>
+<td style="text-align: left;">status</td>
+<td style="text-align: left;">OK</td>
+</tr>
+</tbody>
+</table>
+<h2 id="storage-engine-behavior">Storage Engine Behavior</h2>
+<p>The impact of running <code>ANALYZE TABLE</code> depends on the
+storage engine your table uses:</p>
+<h3 id="innodb-tables">InnoDB Tables</h3>
+<p>For InnoDB tables, MySQL estimates cardinality using random sampling
+of index pages rather than scanning the entire table. Because it uses a
+sample size controlled by the
+<code>innodb_stats_persistent_sample_pages</code> variable, the
+statement runs quickly even on large tables.</p>
+<p>While InnoDB performs persistent statistics updates in the background
+automatically, running <code>ANALYZE TABLE</code> manually is highly
+recommended immediately after bulk data loads or major schema changes.
+During the execution on InnoDB, the table is not locked for writes,
+making it safe to run in production environments with minimal
+impact.</p>
+<h3 id="myisam-tables">MyISAM Tables</h3>
+<p>For MyISAM tables, the statement performs a full index scan to
+compute precise key distributions. During this process, MyISAM places a
+read lock on the table, meaning other sessions can read from the table,
+but write operations will be blocked until the analysis completes.</p>
+<h2 id="best-practices">Best Practices</h2>
+<p>To maintain optimal query performance without impacting your
+database's responsiveness, consider the following best practices:</p>
+<ul>
+<li><strong>Schedule during off-peak hours</strong>: While InnoDB
+analyzes tables without locking, it still consumes I/O resources. Run
+maintenance scripts during low-traffic periods.</li>
+<li><strong>Run after bulk operations</strong>: Always execute
+<code>ANALYZE TABLE</code> after importing large datasets, running
+massive batch updates, or rebuilding indexes.</li>
+<li><strong>Check index statistics</strong>: You can verify the updated
+cardinality of your indexes by running
+<code>SHOW INDEX FROM table_name;</code> before and after executing the
+analysis.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

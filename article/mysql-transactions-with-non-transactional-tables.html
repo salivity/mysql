@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Transactions with Non Transactional Tables - mysql</title>
+    <meta name="description" content="This article explains how MySQL handles transactions that involve a mix of transactional (such as InnoDB) and non-transactional (such as MyISAM) storage engines. You will learn how MySQL behaves during commits and rollbacks in these scenarios, the risks">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-transactions-with-non-transactional-tables">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Transactions with Non Transactional Tables - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-transactions-with-non-transactional-tables" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how MySQL handles transactions that involve a mix of transactional (such as InnoDB) and non-transactional (such as MyISAM) storage engines. You will learn how MySQL behaves during commits and rollbacks in these scenarios, the risks" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-transactions-with-non-transactional-tables">MySQL
+Transactions with Non Transactional Tables</h1>
+<p>This article explains how MySQL handles transactions that involve a
+mix of transactional (such as InnoDB) and non-transactional (such as
+MyISAM) storage engines. You will learn how MySQL behaves during commits
+and rollbacks in these scenarios, the risks of data inconsistency, and
+how the database logs these mixed operations.</p>
+<h2 id="the-core-behavior-of-mixed-transactions">The Core Behavior of
+Mixed Transactions</h2>
+<p>MySQL allows you to write queries that modify both transactional and
+non-transactional tables within a single <code>START TRANSACTION</code>
+and <code>COMMIT</code>/<code>ROLLBACK</code> block. However, MySQL
+cannot enforce ACID (Atomicity, Consistency, Isolation, Durability)
+compliance across non-transactional tables.</p>
+<p>When you mix table types, the statements affecting non-transactional
+tables are executed and committed immediately to the disk. They do not
+respect the transactional boundaries.</p>
+<h2 id="what-happens-during-a-rollback">What Happens During a
+ROLLBACK?</h2>
+<p>If a mixed-table transaction is rolled back, MySQL faces a
+split-state scenario:</p>
+<ol type="1">
+<li><strong>Transactional Tables (e.g., InnoDB):</strong> All
+modifications made during the transaction are successfully undone
+(rolled back), returning the tables to their pre-transaction state.</li>
+<li><strong>Non-Transactional Tables (e.g., MyISAM):</strong>
+Modifications cannot be undone. The changes remain permanently written
+to the database.</li>
+</ol>
+<h3 id="the-rollback-warning">The Rollback Warning</h3>
+<p>Because of this partial rollback, MySQL will complete the rollback
+operation but generate a specific warning to alert the client:</p>
+<p><code>Warning (Code 1196): Some non-transactional changed tables couldn't be rolled back</code></p>
+<p>This warning indicates that your database is now in a potentially
+inconsistent state, as only part of the logical transaction was
+successfully reverted.</p>
+<h2 id="what-happens-during-a-commit">What Happens During a COMMIT?</h2>
+<p>If the transaction finishes without errors and you issue a
+<code>COMMIT</code> statement:</p>
+<ul>
+<li>Changes to both transactional and non-transactional tables are
+persisted.</li>
+<li>While the outcome is successful, a risk of partial execution still
+exists. If the database crashes midway through the transaction before
+the <code>COMMIT</code> is issued, the changes to the non-transactional
+tables will already be saved, while the transactional changes will be
+lost during crash recovery.</li>
+</ul>
+<h2 id="autocommit-mode-and-mixed-transactions">Autocommit Mode and
+Mixed Transactions</h2>
+<p>By default, MySQL runs with <code>autocommit</code> enabled. If you
+do not explicitly start a transaction, every single SQL statement is
+treated as a separate transaction.</p>
+<p>In this mode:</p>
+<ul>
+<li>A statement modifying a non-transactional table commits
+immediately.</li>
+<li>A statement modifying a transactional table also commits
+immediately.</li>
+<li>Mixed-table behavior only becomes a critical issue when you disable
+<code>autocommit</code> or use explicit <code>START TRANSACTION</code>
+blocks.</li>
+</ul>
+<h2 id="binary-logging-and-replication-implications">Binary Logging and
+Replication Implications</h2>
+<p>MySQL uses the binary log (binlog) to replicate data to follower
+instances. Mixed-table transactions complicate replication:</p>
+<ul>
+<li><strong>Statement-Based Logging:</strong> If a transaction
+containing non-transactional updates rolls back, the rollback event is
+still written to the binary log. This ensures that the non-transactional
+changes (which could not be rolled back) are still replicated to the
+follower.</li>
+<li><strong>Row-Based Logging:</strong> MySQL attempts to write the
+state changes to the binlog in a way that preserves data consistency,
+but mixed transactions increase the risk of replication lag or
+out-of-sync errors.</li>
+</ul>
+<h2 id="best-practices">Best Practices</h2>
+<p>To prevent data corruption, inconsistent states, and replication
+issues, adhere to the following guidelines:</p>
+<ul>
+<li><strong>Standardize on InnoDB:</strong> Avoid using legacy,
+non-transactional storage engines like MyISAM. Use InnoDB for all tables
+to ensure full transaction support.</li>
+<li><strong>Separate the Logic:</strong> If you must use
+non-transactional tables, perform operations on them outside of your
+transactional blocks.</li>
+<li><strong>Check for Warnings:</strong> Ensure your application code
+actively listens for and handles MySQL warning code <code>1196</code>
+after executing rollback commands.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

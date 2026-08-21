@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rewrite MySQL Subqueries as JOINs for Performance - mysql</title>
+    <meta name="description" content="In MySQL databases, subqueries can often lead to performance bottlenecks because the query optimizer may execute them as nested loops or generate inefficient temporary tables. Rewriting these subqueries as JOIN operations is a highly effective optimizati">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/rewrite-mysql-subqueries-as-joins-for-performance">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Rewrite MySQL Subqueries as JOINs for Performance - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/rewrite-mysql-subqueries-as-joins-for-performance" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="In MySQL databases, subqueries can often lead to performance bottlenecks because the query optimizer may execute them as nested loops or generate inefficient temporary tables. Rewriting these subqueries as JOIN operations is a highly effective optimizati" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="rewrite-mysql-subqueries-as-joins-for-performance">Rewrite MySQL
+Subqueries as JOINs for Performance</h1>
+<p>In MySQL databases, subqueries can often lead to performance
+bottlenecks because the query optimizer may execute them as nested loops
+or generate inefficient temporary tables. Rewriting these subqueries as
+<code>JOIN</code> operations is a highly effective optimization
+technique that allows the MySQL engine to utilize indexes better and
+execute queries more efficiently. This article provides a
+straightforward guide on how to identify subqueries suitable for
+conversion and the step-by-step process of rewriting them into
+<code>JOIN</code> statements to boost database performance.</p>
+<h2 id="why-rewrite-subqueries-as-joins">Why Rewrite Subqueries as
+JOINs?</h2>
+<p>While subqueries are highly readable and easy to write, older
+versions of MySQL (and even modern versions under certain conditions)
+struggle to optimize them. MySQL often evaluates subqueries for every
+single row processed in the outer query, leading to an <span
+class="math inline">\(O(N^2)\)</span> execution time.</p>
+<p>By contrast, <code>JOIN</code> operations allow the MySQL query
+optimizer to create a better execution plan. The optimizer can choose
+the best join order, use indexes more effectively, and avoid the
+creation of internal temporary tables, resulting in significantly faster
+execution times.</p>
+<hr />
+<h2 id="scenario-1-rewriting-in-subqueries-as-inner-joins">Scenario 1:
+Rewriting IN Subqueries as INNER JOINs</h2>
+<p>One of the most common subquery patterns involves filtering records
+using the <code>IN</code> operator.</p>
+<h3 id="the-subquery-approach">The Subquery Approach</h3>
+<p>This query finds all employees who work in departments located in
+'New York':</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> name </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> employees </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> department_id <span class="kw">IN</span> (</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="kw">id</span> </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> departments </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">WHERE</span> location <span class="op">=</span> <span class="st">&#39;New York&#39;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<h3 id="the-join-rewrite">The JOIN Rewrite</h3>
+<p>To rewrite this, turn the subquery table into an
+<code>INNER JOIN</code> and move the subquery's filtering condition to
+the <code>ON</code> clause or a <code>WHERE</code> clause:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> e.name </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> employees e</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">INNER</span> <span class="kw">JOIN</span> departments d </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> e.department_id <span class="op">=</span> d.<span class="kw">id</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> d.location <span class="op">=</span> <span class="st">&#39;New York&#39;</span>;</span></code></pre></div>
+<p><strong>Why it performs better:</strong> The <code>INNER JOIN</code>
+allows MySQL to look up matching department IDs using indexes on
+<code>departments.id</code> and <code>employees.department_id</code> in
+a single pass, rather than evaluating the <code>IN</code> list for every
+row.</p>
+<hr />
+<h2
+id="scenario-2-rewriting-not-in-or-not-exists-as-left-joins">Scenario 2:
+Rewriting NOT IN or NOT EXISTS as LEFT JOINs</h2>
+<p>Checking for the absence of records using <code>NOT IN</code> or
+<code>NOT EXISTS</code> can be particularly slow in MySQL because it
+often requires a full table scan.</p>
+<h3 id="the-subquery-approach-1">The Subquery Approach</h3>
+<p>This query finds all customers who have never placed an order:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> customer_name </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> <span class="kw">id</span> <span class="kw">NOT</span> <span class="kw">IN</span> (</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> customer_id </span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<h3 id="the-join-rewrite-the-exclusion-join">The JOIN Rewrite (The
+Exclusion Join)</h3>
+<p>You can rewrite this as a <code>LEFT JOIN</code> combined with a
+<code>WHERE ... IS NULL</code> check. This is known as an "exclusion
+join" or "antijoin":</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> c.customer_name </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers c</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> orders o </span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> c.<span class="kw">id</span> <span class="op">=</span> o.customer_id</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> o.customer_id <span class="kw">IS</span> <span class="kw">NULL</span>;</span></code></pre></div>
+<p><strong>Why it performs better:</strong> The <code>LEFT JOIN</code>
+attempts to match all customers with orders. If a customer has no
+orders, the columns from the <code>orders</code> table will return
+<code>NULL</code>. Filtering for <code>o.customer_id IS NULL</code>
+instantly targets customers without orders. MySQL can optimize this
+using index lookups on <code>orders.customer_id</code> and stop
+searching as soon as it finds a match.</p>
+<hr />
+<h2 id="scenario-3-rewriting-correlated-subqueries">Scenario 3:
+Rewriting Correlated Subqueries</h2>
+<p>Correlated subqueries refer to columns from the outer query. This
+forces MySQL to execute the subquery once for every row in the outer
+table.</p>
+<h3 id="the-subquery-approach-2">The Subquery Approach</h3>
+<p>This query retrieves the most recent order date for every
+customer:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> c.customer_name, (</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="fu">MAX</span>(o.order_date) </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders o </span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">WHERE</span> o.customer_id <span class="op">=</span> c.<span class="kw">id</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>) <span class="kw">AS</span> latest_order</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers c;</span></code></pre></div>
+<h3 id="the-join-rewrite-1">The JOIN Rewrite</h3>
+<p>You can rewrite this by creating a derived table (a subquery in the
+<code>FROM</code> clause) that aggregates the data first, and then
+joining it to the main table:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> c.customer_name, o.latest_order</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> customers c</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> (</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> customer_id, <span class="fu">MAX</span>(order_date) <span class="kw">AS</span> latest_order</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">FROM</span> orders</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">GROUP</span> <span class="kw">BY</span> customer_id</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>) o <span class="kw">ON</span> c.<span class="kw">id</span> <span class="op">=</span> o.customer_id;</span></code></pre></div>
+<p><strong>Why it performs better:</strong> Instead of querying the
+<code>orders</code> table repeatedly for each customer, MySQL aggregates
+the <code>orders</code> table once and performs a single, highly
+efficient join.</p>
+<hr />
+<h2 id="key-rules-for-converting-queries">Key Rules for Converting
+Queries</h2>
+<ul>
+<li><strong>Ensure Indexes Exist:</strong> Joins rely heavily on
+indexes. Ensure that the foreign keys and columns used in the
+<code>ON</code> clauses are properly indexed.</li>
+<li><strong>Watch Out for Duplicates:</strong> When converting an
+<code>IN</code> subquery to an <code>INNER JOIN</code>, ensure that the
+joined table does not introduce duplicate rows. If the joined table has
+a one-to-many relationship, use <code>DISTINCT</code> or
+<code>GROUP BY</code> to maintain the original row count.</li>
+<li><strong>Analyze the Execution Plan:</strong> Always verify
+performance improvements by running <code>EXPLAIN</code> on both the
+subquery and the rewritten <code>JOIN</code> query to see how MySQL
+processes the data.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

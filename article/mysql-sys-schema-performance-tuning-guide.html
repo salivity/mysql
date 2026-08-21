@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL sys Schema Performance Tuning Guide - mysql</title>
+    <meta name="description" content="The MySQL sys schema is a powerful, built-in toolset designed to simplify database administration and performance tuning. This article explores how the sys schema interprets complex data from the performanceschema and informationschema to provide actiona">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-sys-schema-performance-tuning-guide">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL sys Schema Performance Tuning Guide - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-sys-schema-performance-tuning-guide" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="The MySQL sys schema is a powerful, built-in toolset designed to simplify database administration and performance tuning. This article explores how the sys schema interprets complex data from the performanceschema and informationschema to provide actiona" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-sys-schema-performance-tuning-guide">MySQL sys Schema
+Performance Tuning Guide</h1>
+<p>The MySQL <code>sys</code> schema is a powerful, built-in toolset
+designed to simplify database administration and performance tuning.
+This article explores how the <code>sys</code> schema interprets complex
+data from the <code>performance_schema</code> and
+<code>information_schema</code> to provide actionable insights,
+highlighting its key views, stored procedures, and practical
+applications for optimizing query performance and resource
+utilization.</p>
+<h2 id="understanding-the-mysql-sys-schema">Understanding the MySQL sys
+Schema</h2>
+<p>The <code>performance_schema</code> in MySQL monitors database events
+and performance metrics in near real-time. However, its raw tables are
+highly complex, containing hundreds of millions of rows of granular data
+that can be difficult to interpret.</p>
+<p>The <code>sys</code> schema acts as a user-friendly abstraction layer
+over the <code>performance_schema</code>. It organizes this raw
+instrumentation data into formatted, easily readable views, functions,
+and stored procedures. Instead of writing complex multi-table joins to
+diagnose a bottleneck, database administrators (DBAs) and developers can
+query simple <code>sys</code> views to get immediate answers.</p>
+<h2 id="how-the-sys-schema-simplifies-performance-tuning">How the sys
+Schema Simplifies Performance Tuning</h2>
+<p>The <code>sys</code> schema simplifies the performance tuning process
+in several key ways:</p>
+<h3 id="1-human-readable-formatting">1. Human-Readable Formatting</h3>
+<p>By default, the <code>performance_schema</code> tracks time in
+picoseconds and memory usage in bytes. The <code>sys</code> schema
+automatically formats these values into human-readable units, such as
+milliseconds, seconds, megabytes, and gigabytes, making instant analysis
+much easier.</p>
+<h3 id="2-identifying-slow-and-expensive-queries">2. Identifying Slow
+and Expensive Queries</h3>
+<p>Finding resource-heavy queries is critical for database optimization.
+The <code>sys</code> schema provides views that aggregate query
+execution statistics:</p>
+<ul>
+<li><strong><code>statement_analysis</code></strong>: Displays details
+about executed queries, including which queries run the most frequently,
+take the longest to execute, or return the most errors.</li>
+<li><strong><code>statements_with_temp_tables</code></strong>: Pinpoints
+queries that create temporary tables on disk, which can severely degrade
+performance.</li>
+<li><strong><code>statements_with_full_table_scans</code></strong>:
+Identifies queries running without indexes, forcing MySQL to scan entire
+tables.</li>
+</ul>
+<h3 id="3-finding-unused-and-redundant-indexes">3. Finding Unused and
+Redundant Indexes</h3>
+<p>While indexes speed up read operations, unused indexes waste storage
+space and slow down write operations (INSERT, UPDATE, DELETE). The
+<code>sys</code> schema helps clean up database indexing:</p>
+<ul>
+<li><strong><code>schema_unused_indexes</code></strong>: Lists all
+indexes that have not been used since the server started.</li>
+<li><strong><code>schema_redundant_indexes</code></strong>: Highlights
+duplicate or redundant indexes that can be safely dropped.</li>
+</ul>
+<h3 id="4-diagnosing-memory-usage">4. Diagnosing Memory Usage</h3>
+<p>Memory leaks and misallocated buffers can cause database crashes. The
+<code>sys</code> schema tracks memory allocation across the entire
+server:</p>
+<ul>
+<li><strong><code>memory_global_by_current_bytes</code></strong>:
+Displays which internal events, threads, or buffers are currently
+consuming the most memory.</li>
+<li><strong><code>memory_by_thread_by_current_bytes</code></strong>:
+Pinpoints specific user connections or system background threads that
+are monopolizing RAM.</li>
+</ul>
+<h3 id="5-analyzing-locks-and-blocked-sessions">5. Analyzing Locks and
+Blocked Sessions</h3>
+<p>When one query blocks another, database latency spikes. The
+<code>sys</code> schema makes it simple to trace locks:</p>
+<ul>
+<li><strong><code>innodb_lock_waits</code></strong>: Shows which
+transactions are currently blocked, what resources they are waiting for,
+and which session is holding the blocking lock.</li>
+</ul>
+<h2 id="key-sys-schema-stored-procedures-for-rapid-diagnosis">Key sys
+Schema Stored Procedures for Rapid Diagnosis</h2>
+<p>In addition to static views, the <code>sys</code> schema includes
+several utility procedures that automate diagnostic tasks:</p>
+<ul>
+<li><strong><code>sys.diagnostics()</code></strong>: Generates a
+comprehensive HTML or text report of the current state of the MySQL
+server, capturing CPU, memory, active transactions, and query
+bottlenecks.</li>
+<li><strong><code>sys.ps_setup_show_enabled()</code></strong>: Displays
+which performance schema instruments and consumers are currently
+enabled, helping you configure monitoring without impacting server
+performance.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

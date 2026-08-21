@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Shell Features for Managing Databases - mysql</title>
+    <meta name="description" content="MySQL Shell is an advanced command-line client and code editor designed to simplify the administration and development of MySQL databases. This article explores the primary features of the MySQL Shell utility, highlighting how its multi-language support,">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-shell-features-for-managing-databases">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Shell Features for Managing Databases - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-shell-features-for-managing-databases" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="MySQL Shell is an advanced command-line client and code editor designed to simplify the administration and development of MySQL databases. This article explores the primary features of the MySQL Shell utility, highlighting how its multi-language support," />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-shell-features-for-managing-databases">MySQL Shell
+Features for Managing Databases</h1>
+<p>MySQL Shell is an advanced command-line client and code editor
+designed to simplify the administration and development of MySQL
+databases. This article explores the primary features of the MySQL Shell
+utility, highlighting how its multi-language support, powerful
+administrative APIs, high-performance backup utilities, and diagnostic
+tools streamline database instance management for administrators and
+developers alike.</p>
+<h2 id="multi-language-execution-modes">Multi-Language Execution
+Modes</h2>
+<p>Unlike the traditional MySQL command-line client, MySQL Shell
+supports three execution modes: SQL, JavaScript, and Python. Users can
+switch between these modes seamlessly within the same session. This
+multi-language support allows administrators to write complex scripts
+using Python or JavaScript to automate database tasks, run queries, and
+process data structures directly within the shell environment.</p>
+<h2 id="mysql-adminapi-for-high-availability">MySQL AdminAPI for High
+Availability</h2>
+<p>One of the most powerful features of MySQL Shell is the AdminAPI.
+This built-in API enables database administrators to configure, manage,
+and monitor high-availability solutions easily.</p>
+<ul>
+<li><strong>MySQL InnoDB Cluster:</strong> Automates the deployment and
+management of a group of MySQL servers configured for group replication,
+ensuring automatic failover and high availability.</li>
+<li><strong>MySQL InnoDB ReplicaSet:</strong> Simplifies the setup of
+classic master-slave replication topologies.</li>
+<li><strong>MySQL InnoDB ClusterSet:</strong> Facilitates disaster
+recovery setups by linking multiple InnoDB Clusters across different
+geographical locations.</li>
+</ul>
+<p>The AdminAPI abstract complex commands into simple Python or
+JavaScript methods, reducing human error during setup and
+maintenance.</p>
+<h2 id="high-performance-dump-and-load-utilities">High-Performance Dump
+and Load Utilities</h2>
+<p>MySQL Shell includes advanced utility tools designed for fast logical
+backups and restoration, specifically optimized for cloud migrations and
+large databases.</p>
+<ul>
+<li><strong>Instance and Schema Dumps:</strong> The
+<code>util.dumpInstance()</code> and <code>util.dumpSchemas()</code>
+utilities allow multi-threaded, high-performance data dumping. They
+split tables into chunks and export them in parallel.</li>
+<li><strong>Threaded Loading:</strong> The <code>util.loadDump()</code>
+utility imports these dumps using parallel threads, significantly
+reducing downtime during database restoration or migration to MySQL
+HeatWave and Oracle Cloud Infrastructure (OCI).</li>
+</ul>
+<h2 id="mysql-shell-upgrade-checker">MySQL Shell Upgrade Checker</h2>
+<p>To ensure seamless transitions between MySQL database versions, MySQL
+Shell features an Upgrade Checker utility
+(<code>util.checkForServerUpgrade()</code>). This tool analyzes a
+running MySQL instance for compatibility issues before upgrading to a
+newer version (such as upgrading from MySQL 5.7 to 8.0). It generates a
+detailed report identifying deprecated configuration parameters,
+potential syntax conflicts, and structural issues that need addressing
+prior to the upgrade.</p>
+<h2 id="interactive-output-and-custom-reporting">Interactive Output and
+Custom Reporting</h2>
+<p>MySQL Shell enhances the user experience by providing structured,
+easy-to-read output formats.</p>
+<ul>
+<li><strong>Table and JSON Formatting:</strong> Users can view query
+results in standard tabular format or export them directly as JSON,
+making integration with external applications straightforward.</li>
+<li><strong>Custom Reports:</strong> Administrators can create, save,
+and run custom diagnostic reports within the shell to monitor server
+health, active connections, and query performance in real-time.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

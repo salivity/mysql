@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What is MySQL Metadata Lock in DDL? - mysql</title>
+    <meta name="description" content="When executing Data Definition Language (DDL) statements in MySQL, the database system employs a crucial concurrency control mechanism known as the Metadata Lock (MDL). This article explains the core function of MDL during DDL operations, how it prevents">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/what-is-mysql-metadata-lock-in-ddl">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="What is MySQL Metadata Lock in DDL? - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/what-is-mysql-metadata-lock-in-ddl" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="When executing Data Definition Language (DDL) statements in MySQL, the database system employs a crucial concurrency control mechanism known as the Metadata Lock (MDL). This article explains the core function of MDL during DDL operations, how it prevents" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="what-is-mysql-metadata-lock-in-ddl">What is MySQL Metadata Lock
+in DDL?</h1>
+<p>When executing Data Definition Language (DDL) statements in MySQL,
+the database system employs a crucial concurrency control mechanism
+known as the Metadata Lock (MDL). This article explains the core
+function of MDL during DDL operations, how it prevents data
+inconsistency, and how it manages concurrent access to database schemas
+to ensure transactional integrity.</p>
+<h2 id="the-core-function-of-metadata-locks-mdl">The Core Function of
+Metadata Locks (MDL)</h2>
+<p>The primary purpose of the MySQL Metadata Lock (MDL) is to isolate
+table schema changes from active data operations. It ensures that while
+a session is reading or writing to a table, no other session can modify
+the structure of that table.</p>
+<p>Before MDL was fully implemented (prior to MySQL 5.5), a transaction
+could begin reading a table, and a concurrent DDL statement (such as
+<code>DROP TABLE</code> or <code>ALTER TABLE</code>) could execute
+mid-transaction. This resulted in broken queries, replication
+desynchronization, and corrupted transactions. MDL prevents this by
+locking the "metadata" (the table's definition) rather than the actual
+data rows.</p>
+<h2 id="how-mdl-works-during-ddl-execution">How MDL Works During DDL
+Execution</h2>
+<p>MDL operates using a system of shared and exclusive locks:</p>
+<ul>
+<li><strong>Shared Locks for Data Operations (DML):</strong> When a
+query (such as <code>SELECT</code>, <code>INSERT</code>,
+<code>UPDATE</code>, or <code>DELETE</code>) executes, MySQL
+automatically acquires a <strong>Shared Metadata Lock</strong> on the
+target table. Multiple sessions can hold shared locks on the same table
+simultaneously, allowing concurrent read/write operations to proceed
+without blocking one another.</li>
+<li><strong>Exclusive Locks for Schema Changes (DDL):</strong> When a
+DDL statement (such as <code>ALTER TABLE</code>,
+<code>DROP TABLE</code>, or <code>RENAME TABLE</code>) is executed,
+MySQL requests an <strong>Exclusive Metadata Lock</strong>.</li>
+</ul>
+<p>An exclusive lock cannot be granted if any shared locks are currently
+active. Consequently, the DDL statement must wait in a queue until all
+active transactions holding shared locks on that table are completed
+(either committed or rolled back). Once the exclusive lock is granted,
+all subsequent queries attempting to access the table are blocked until
+the DDL operation completes and releases the lock.</p>
+<h2 id="why-metadata-locks-are-critical">Why Metadata Locks are
+Critical</h2>
+<ul>
+<li><strong>Ensures Transactional Integrity:</strong> MDL guarantees
+that the structure of a table remains constant for the entire duration
+of a transaction, preventing "dirty reads" of schema definitions.</li>
+<li><strong>Guarantees Replication Safety:</strong> It ensures that
+statements are written to the binary log in the correct chronological
+order, preventing replication desynchronization between primary and
+replica servers.</li>
+<li><strong>Protects Long-running Queries:</strong> It prevents active
+analytical queries or backups from failing due to sudden, mid-execution
+schema modifications.</li>
+</ul>
+<h2 id="the-risk-of-mdl-blocking">The Risk of MDL Blocking</h2>
+<p>While MDL is essential for database safety, it can introduce
+performance bottlenecks. Because MySQL prioritizes exclusive lock
+requests, a pending DDL statement waiting for a long-running query to
+finish will block all subsequent incoming queries trying to access that
+table. If left unchecked, this queueing behavior can quickly exhaust the
+database connection pool and cause application-wide downtime.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

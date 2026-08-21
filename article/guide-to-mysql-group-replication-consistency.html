@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide to MySQL group_replication_consistency - mysql</title>
+    <meta name="description" content="This article explores the vital role of the groupreplicationconsistency parameter in configuring and managing MySQL InnoDB Clusters. We will examine how this system variable controls transaction consistency across database nodes, detail the different con">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/guide-to-mysql-group-replication-consistency">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Guide to MySQL group_replication_consistency - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/guide-to-mysql-group-replication-consistency" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explores the vital role of the groupreplicationconsistency parameter in configuring and managing MySQL InnoDB Clusters. We will examine how this system variable controls transaction consistency across database nodes, detail the different con" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="guide-to-mysql-group_replication_consistency">Guide to MySQL
+group_replication_consistency</h1>
+<p>This article explores the vital role of the
+<code>group_replication_consistency</code> parameter in configuring and
+managing MySQL InnoDB Clusters. We will examine how this system variable
+controls transaction consistency across database nodes, detail the
+different consistency levels available, and explain how to choose the
+correct setting to balance data integrity and cluster performance.</p>
+<h2 id="what-is-group_replication_consistency">What is
+group_replication_consistency?</h2>
+<p>In a MySQL Group Replication cluster, multiple database servers
+(nodes) work together to provide high availability. By default, group
+replication operates with an "eventual consistency" model for read
+operations. This means that when data is written to the primary node,
+there can be a small delay before that write is applied to the secondary
+nodes. During this window, a client reading from a secondary node might
+see stale data.</p>
+<p>The <code>group_replication_consistency</code> parameter allows
+database administrators to control this behavior. It defines the
+synchronization guarantees for read and write transactions across the
+cluster, allowing you to prevent stale reads and ensure strict data
+consistency where required.</p>
+<h2 id="the-five-consistency-levels">The Five Consistency Levels</h2>
+<p>MySQL provides five distinct values for the
+<code>group_replication_consistency</code> parameter. Each level offers
+a different balance between performance and data guarantees.</p>
+<h3 id="1-eventual">1. EVENTUAL</h3>
+<p>This is the default setting. Transactions do not wait for preceding
+transactions to be applied on other nodes before executing.</p>
+<ul>
+<li><strong>Behavior:</strong> Reads can be served from any node
+immediately, even if that node has not yet applied the latest
+updates.</li>
+<li><strong>Pros:</strong> Offers the lowest latency and highest
+throughput.</li>
+<li><strong>Cons:</strong> Allows the possibility of stale reads on
+secondary nodes.</li>
+</ul>
+<h3 id="2-before_on_primary_failover">2. BEFORE_ON_PRIMARY_FAILOVER</h3>
+<p>This level is specifically designed to prevent stale reads on a new
+primary node during a failover event in a single-primary cluster.</p>
+<ul>
+<li><strong>Behavior:</strong> When a new primary is elected, incoming
+transactions are buffered on the new primary until it has finished
+applying any backlog of transactions from the old primary.</li>
+<li><strong>Pros:</strong> Ensures clients do not read outdated data or
+experience write-skew immediately after a failover.</li>
+<li><strong>Cons:</strong> Temporarily increases latency for new
+transactions during the brief failover window.</li>
+</ul>
+<h3 id="3-before">3. BEFORE</h3>
+<p>With this setting, a transaction waits until all preceding
+transactions in the replication queue are applied before it begins
+executing on a node.</p>
+<ul>
+<li><strong>Behavior:</strong> If you query a node, the query pauses
+until that node is fully caught up with all changes committed across the
+cluster up to that point.</li>
+<li><strong>Pros:</strong> Guarantees that read operations always return
+the most up-to-date data (prevents stale reads).</li>
+<li><strong>Cons:</strong> Increases read latency, as read transactions
+must wait for the node's replication queue to clear.</li>
+</ul>
+<h3 id="4-after">4. AFTER</h3>
+<p>This level ensures that once a transaction commits on the originating
+node, the change is guaranteed to be applied on all other cluster nodes
+before the client receives a success acknowledgment.</p>
+<ul>
+<li><strong>Behavior:</strong> The writing transaction blocks until all
+other nodes have fully written and committed the changes.</li>
+<li><strong>Pros:</strong> Guarantees that any subsequent read on any
+node in the cluster will immediately see the updated data.</li>
+<li><strong>Cons:</strong> Significantly increases write latency, as
+every write must wait for network roundtrips and execution on all
+nodes.</li>
+</ul>
+<h3 id="5-before_and_after">5. BEFORE_AND_AFTER</h3>
+<p>This is the most stringent consistency level, combining the
+guarantees of both <code>BEFORE</code> and <code>AFTER</code>.</p>
+<ul>
+<li><strong>Behavior:</strong> A transaction waits for all preceding
+transactions to be applied before it begins, and then blocks until its
+own changes are applied to all other nodes before committing.</li>
+<li><strong>Pros:</strong> Offers total consistency and eliminates any
+possibility of stale reads or write conflicts across the entire
+cluster.</li>
+<li><strong>Cons:</strong> Introduces the highest latency overhead for
+both reads and writes.</li>
+</ul>
+<h2 id="choosing-the-right-consistency-level">Choosing the Right
+Consistency Level</h2>
+<p>Selecting the correct value for
+<code>group_replication_consistency</code> depends entirely on your
+application's requirements:</p>
+<ul>
+<li><strong>Use EVENTUAL</strong> for applications where
+read-after-write consistency is not critical, such as logging systems,
+analytics, or content management systems where a delay of a few
+milliseconds in updating a view is acceptable.</li>
+<li><strong>Use BEFORE</strong> when you have a read-intensive
+application that absolutely requires up-to-date reads (e.g., checking a
+user's current account balance before permitting a transaction).</li>
+<li><strong>Use AFTER</strong> when you have a write-intensive workload
+where you must guarantee that once a write is acknowledged, any
+subsequent read on any server will instantly see the change.</li>
+<li><strong>Use BEFORE_ON_PRIMARY_FAILOVER</strong> as a safe baseline
+for single-primary clusters to ensure consistency during unexpected
+hardware transitions without penalizing day-to-day performance.</li>
+</ul>
+<p>The parameter can be set globally to protect the entire cluster, or
+configured at the session level. Session-level configuration is highly
+recommended, as it allows you to enforce strict consistency (like
+<code>BEFORE</code> or <code>AFTER</code>) only on specific, critical
+transactions while keeping the rest of the cluster running at optimal
+speed under the default <code>EVENTUAL</code> setting.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Use FOR UPDATE for Pessimistic Locking in MySQL - mysql</title>
+    <meta name="description" content="This article explains how to implement pessimistic locking in MySQL using the FOR UPDATE clause. You will learn the fundamental concepts of pessimistic locking, see how the FOR UPDATE statement works within database transactions, and explore practical SQ">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-to-use-for-update-for-pessimistic-locking-in-mysql">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How to Use FOR UPDATE for Pessimistic Locking in MySQL - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-to-use-for-update-for-pessimistic-locking-in-mysql" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how to implement pessimistic locking in MySQL using the FOR UPDATE clause. You will learn the fundamental concepts of pessimistic locking, see how the FOR UPDATE statement works within database transactions, and explore practical SQ" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-to-use-for-update-for-pessimistic-locking-in-mysql">How to
+Use FOR UPDATE for Pessimistic Locking in MySQL</h1>
+<p>This article explains how to implement pessimistic locking in MySQL
+using the <code>FOR UPDATE</code> clause. You will learn the fundamental
+concepts of pessimistic locking, see how the <code>FOR UPDATE</code>
+statement works within database transactions, and explore practical SQL
+examples designed to prevent data inconsistency in high-concurrency
+environments.</p>
+<h2 id="understanding-pessimistic-locking">Understanding Pessimistic
+Locking</h2>
+<p>Pessimistic locking is a concurrency control method that assumes
+conflicts between transactions are highly likely. To prevent multiple
+transactions from modifying the same data simultaneously, this approach
+locks the target database rows as soon as they are read. Until the
+locking transaction is completed (either committed or rolled back), no
+other transaction can modify or lock those specific rows.</p>
+<p>In MySQL, pessimistic locking is primarily achieved using the
+<code>FOR UPDATE</code> clause inside an InnoDB transaction.</p>
+<h2 id="how-for-update-works-in-mysql">How FOR UPDATE Works in
+MySQL</h2>
+<p>When you append <code>FOR UPDATE</code> to a <code>SELECT</code>
+query, MySQL locks the retrieved rows. Any other transaction attempting
+to perform a write operation (<code>UPDATE</code>, <code>DELETE</code>)
+or another locked read (<code>SELECT ... FOR UPDATE</code>) on these
+rows will be forced to wait until the original transaction finishes.</p>
+<p>To use <code>FOR UPDATE</code> correctly, you must run it inside a
+transaction block.</p>
+<h3 id="step-by-step-sql-example">Step-by-Step SQL Example</h3>
+<p>Consider an inventory management scenario where you need to deduct
+stock for an item. To prevent two customers from purchasing the last
+item simultaneously, you can use pessimistic locking.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Step 1: Start a transaction</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">START</span> <span class="kw">TRANSACTION</span>;</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- Step 2: Select and lock the row</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> stock_count </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> inventory </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> product_id <span class="op">=</span> <span class="dv">101</span> </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="cf">FOR</span> <span class="kw">UPDATE</span>;</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- Step 3: Perform the business logic and update the row</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="kw">UPDATE</span> inventory </span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> stock_count <span class="op">=</span> stock_count <span class="op">-</span> <span class="dv">1</span> </span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> product_id <span class="op">=</span> <span class="dv">101</span>;</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co">-- Step 4: Commit the transaction to release the lock</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">COMMIT</span>;</span></code></pre></div>
+<p>While this transaction is active, if another user executes a similar
+transaction for <code>product_id = 101</code>, their
+<code>SELECT ... FOR UPDATE</code> query will pause and wait for the
+first transaction to <code>COMMIT</code> or <code>ROLLBACK</code>.</p>
+<h2 id="crucial-implementation-details">Crucial Implementation
+Details</h2>
+<p>To ensure <code>FOR UPDATE</code> behaves efficiently and safely,
+keep the following MySQL-specific behaviors in mind:</p>
+<h3 id="1-use-indexes-to-avoid-table-locking">1. Use Indexes to Avoid
+Table Locking</h3>
+<p>InnoDB uses row-level locking. However, if your <code>WHERE</code>
+clause does not use an index, MySQL cannot identify the exact rows to
+lock and may resort to locking the entire table. Always ensure the
+columns in your <code>WHERE</code> clause are indexed.</p>
+<h3 id="2-handling-lock-timeouts">2. Handling Lock Timeouts</h3>
+<p>If a transaction waits too long for a lock to release, MySQL throws a
+lock wait timeout error:
+<code>ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction</code></p>
+<p>You can configure this timeout duration (in seconds) using the system
+variable:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> innodb_lock_wait_timeout <span class="op">=</span> <span class="dv">5</span>;</span></code></pre></div>
+<h3 id="3-using-nowait-and-skip-locked-mysql-80">3. Using NOWAIT and
+SKIP LOCKED (MySQL 8.0+)</h3>
+<p>In modern versions of MySQL, you can modify the locking behavior if a
+row is already locked:</p>
+<ul>
+<li><strong>NOWAIT</strong>: Fails immediately with an error instead of
+waiting for the lock to release.
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> inventory <span class="kw">WHERE</span> product_id <span class="op">=</span> <span class="dv">101</span> <span class="cf">FOR</span> <span class="kw">UPDATE</span> <span class="kw">NOWAIT</span>;</span></code></pre></div></li>
+<li><strong>SKIP LOCKED</strong>: Skips any locked rows and returns only
+the available, unlocked rows. This is highly useful for queue systems.
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> inventory <span class="kw">WHERE</span> product_id <span class="op">=</span> <span class="dv">101</span> <span class="cf">FOR</span> <span class="kw">UPDATE</span> <span class="kw">SKIP</span> <span class="kw">LOCKED</span>;</span></code></pre></div></li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Fractional Seconds Precision in Time Data Types - mysql</title>
+    <meta name="description" content="This article explains how MySQL handles fractional seconds precision for temporal data types, including TIME, DATETIME, and TIMESTAMP. You will learn how to define fractional precision, how MySQL manages rounding during data insertion, and the storage im">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-fractional-seconds-precision-in-time-data-types">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Fractional Seconds Precision in Time Data Types - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-fractional-seconds-precision-in-time-data-types" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how MySQL handles fractional seconds precision for temporal data types, including TIME, DATETIME, and TIMESTAMP. You will learn how to define fractional precision, how MySQL manages rounding during data insertion, and the storage im" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-fractional-seconds-precision-in-time-data-types">MySQL
+Fractional Seconds Precision in Time Data Types</h1>
+<p>This article explains how MySQL handles fractional seconds precision
+for temporal data types, including <code>TIME</code>,
+<code>DATETIME</code>, and <code>TIMESTAMP</code>. You will learn how to
+define fractional precision, how MySQL manages rounding during data
+insertion, and the storage implications of using high-precision time
+values in your database tables.</p>
+<h2 id="supported-data-types-and-syntax">Supported Data Types and
+Syntax</h2>
+<p>MySQL supports fractional seconds for the <code>TIME</code>,
+<code>DATETIME</code>, and <code>TIMESTAMP</code> data types. To enable
+fractional seconds, you must specify the fractional seconds precision
+(FSP) in parentheses when defining the column.</p>
+<p>The syntax for declaration is:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>type_name(fsp)</span></code></pre></div>
+<p>The <code>fsp</code> value represents the number of digits after the
+decimal point and must be an integer from <code>0</code> to
+<code>6</code>.</p>
+<ul>
+<li>A precision of <code>0</code> means no fractional seconds (this is
+the default behavior if no FSP is specified).</li>
+<li>A precision of <code>3</code> represents milliseconds.</li>
+<li>A precision of <code>6</code> represents microseconds, which is the
+maximum supported precision in MySQL.</li>
+</ul>
+<p>For example, to create a table with varying levels of fractional
+precision, you would write:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> precision_example (</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    event_time <span class="dt">TIME</span>(<span class="dv">3</span>),</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    created_at <span class="dt">TIMESTAMP</span>(<span class="dv">6</span>),</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    updated_at DATETIME(<span class="dv">0</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div>
+<h2 id="how-mysql-handles-rounding">How MySQL Handles Rounding</h2>
+<p>When you insert a time value that contains more fractional second
+digits than the column’s defined precision, MySQL rounds the value
+rather than truncating it.</p>
+<p>For instance, if you insert the value
+<code>'2023-10-27 12:30:45.5678'</code> into a <code>DATETIME(2)</code>
+column, MySQL rounds the fractional part to two decimal places. The
+stored value becomes <code>'2023-10-27 12:30:45.57'</code>.</p>
+<p>If rounding causes a value to overflow into the next unit of time
+(such as rounding <code>.999</code> to <code>1.000</code>), MySQL
+propagates the carryover to the seconds, minutes, hours, or even the
+date. For example, inserting <code>'2023-12-31 23:59:59.999'</code> into
+a <code>DATETIME(0)</code> column will result in the value being rounded
+up to <code>'2024-01-01 00:00:00'</code>.</p>
+<h2 id="storage-requirements">Storage Requirements</h2>
+<p>Adding fractional seconds precision increases the storage footprint
+of your temporal columns. MySQL allocates storage for the fractional
+seconds part in addition to the base storage required for the temporal
+data type.</p>
+<p>The extra storage requirements for fractional seconds are allocated
+as follows:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Fractional Seconds Precision (FSP)</th>
+<th style="text-align: left;">Additional Storage Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>0</strong></td>
+<td style="text-align: left;">0 bytes</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>1, 2</strong></td>
+<td style="text-align: left;">1 byte</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>3, 4</strong></td>
+<td style="text-align: left;">2 bytes</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>5, 6</strong></td>
+<td style="text-align: left;">3 bytes</td>
+</tr>
+</tbody>
+</table>
+<p>To calculate the total storage of a column, add this fractional
+storage to the base storage of the data type. For example, in modern
+MySQL versions, a standard <code>DATETIME</code> column requires a base
+of 5 bytes of storage. If you define it as <code>DATETIME(6)</code>, it
+will require an additional 3 bytes, resulting in a total of 8 bytes of
+storage per row.</p></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

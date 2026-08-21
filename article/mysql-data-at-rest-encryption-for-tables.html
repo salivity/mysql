@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySQL Data-at-Rest Encryption for Tables - mysql</title>
+    <meta name="description" content="This article explains how MySQL natively secures sensitive data-at-rest using InnoDB tablespace encryption. It covers the database's two-tier key architecture, the role of keyring plugins, and the practical steps required to enable and manage encryption">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/mysql-data-at-rest-encryption-for-tables">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="MySQL Data-at-Rest Encryption for Tables - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/mysql-data-at-rest-encryption-for-tables" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how MySQL natively secures sensitive data-at-rest using InnoDB tablespace encryption. It covers the database's two-tier key architecture, the role of keyring plugins, and the practical steps required to enable and manage encryption" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="mysql-data-at-rest-encryption-for-tables">MySQL Data-at-Rest
+Encryption for Tables</h1>
+<p>This article explains how MySQL natively secures sensitive
+data-at-rest using InnoDB tablespace encryption. It covers the
+database's two-tier key architecture, the role of keyring plugins, and
+the practical steps required to enable and manage encryption for
+individual database tables.</p>
+<h2 id="the-two-tier-key-architecture">The Two-Tier Key
+Architecture</h2>
+<p>MySQL utilizes a two-tier encryption key architecture to secure
+tablespaces without sacrificing database performance. This system
+consists of a master encryption key and individual tablespace keys.</p>
+<ul>
+<li><strong>Tablespace Key (Internal):</strong> Each encrypted
+tablespace has its own tablespace key. This key is used to encrypt and
+decrypt the actual data blocks written to disk. The tablespace key is
+stored directly within the tablespace header, but it is never stored in
+plaintext; it is always encrypted.</li>
+<li><strong>Master Encryption Key (External):</strong> The master
+encryption key is used to encrypt the individual tablespace keys. It is
+managed externally from the database files and resides within a MySQL
+keyring.</li>
+</ul>
+<p>When a query requests data from an encrypted table, MySQL uses the
+master key to decrypt the tablespace key, which in turn decrypts the
+data blocks in memory. When the master key is rotated, only the
+tablespace keys are decrypted and re-encrypted with the new master key;
+the actual table data on disk remains untouched, making key rotation a
+fast metadata operation.</p>
+<h2 id="the-role-of-keyring-plugins">The Role of Keyring Plugins</h2>
+<p>To manage the master encryption key, MySQL relies on keyring
+components or plugins. The keyring must be loaded early in the MySQL
+startup process so that the master key is available before the InnoDB
+storage engine initializes.</p>
+<p>MySQL offers several keyring plugins depending on the edition
+(Community vs. Enterprise):</p>
+<ul>
+<li><strong>keyring_file:</strong> Stores the master key in a local file
+on the server. This is suitable for basic setups but is less secure
+because the key file exists on the same storage system as the
+database.</li>
+<li><strong>keyring_encrypted_file:</strong> An enterprise-grade version
+of the file plugin that encrypts the local keyring file itself.</li>
+<li><strong>HashiCorp Vault / KMIP Plugins:</strong> Secure enterprise
+plugins that store the master key in external, dedicated key management
+systems (KMS).</li>
+</ul>
+<h2 id="how-to-enable-table-encryption">How to Enable Table
+Encryption</h2>
+<p>To encrypt sensitive tables natively in MySQL, you must first
+configure a keyring plugin in the MySQL configuration file
+(<code>my.cnf</code> or <code>my.ini</code>).</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[mysqld]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">early-plugin-load</span><span class="ot">=</span><span class="st">keyring_file.so</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dt">keyring_file_data</span><span class="ot">=</span><span class="st">/var/lib/mysql-keyring/keyring</span></span></code></pre></div>
+<p>Once the keyring is active, you can natively encrypt individual
+tables during creation or alter existing tables using the
+<code>ENCRYPTION</code> clause.</p>
+<h3 id="creating-a-new-encrypted-table">Creating a New Encrypted
+Table</h3>
+<p>To create a table with data-at-rest encryption, append
+<code>ENCRYPTION='Y'</code> to the <code>CREATE TABLE</code>
+statement:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> sensitive_user_data (</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> <span class="dt">INT</span> AUTO_INCREMENT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    social_security_number <span class="dt">VARCHAR</span>(<span class="dv">11</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    credit_card_hash <span class="dt">VARCHAR</span>(<span class="dv">64</span>) <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>) ENCRYPTION<span class="op">=</span><span class="st">&#39;Y&#39;</span>;</span></code></pre></div>
+<h3 id="encrypting-an-existing-table">Encrypting an Existing Table</h3>
+<p>To encrypt an already existing unencrypted table, use the
+<code>ALTER TABLE</code> statement:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> sensitive_user_data ENCRYPTION<span class="op">=</span><span class="st">&#39;Y&#39;</span>;</span></code></pre></div>
+<p>To remove encryption from a table, alter the table and set the option
+to <code>'N'</code>:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> sensitive_user_data ENCRYPTION<span class="op">=</span><span class="st">&#39;N&#39;</span>;</span></code></pre></div>
+<h2 id="encrypting-logs-and-shared-tablespaces">Encrypting Logs and
+Shared Tablespaces</h2>
+<p>While encrypting individual tables (which reside in their own
+file-per-table tablespaces) secures the primary data files, sensitive
+data can still leak into auxiliary files. MySQL 8.0 allows
+administrators to extend native encryption to these areas:</p>
+<ul>
+<li><strong>System Tablespace:</strong> Can be encrypted by setting
+<code>innodb_sys_tablespace_encrypt=ON</code>.</li>
+<li><strong>Redo Logs:</strong> The transaction logs can be encrypted by
+setting <code>innodb_redo_log_encrypt=ON</code>.</li>
+<li><strong>Undo Logs:</strong> Active undo logs can be secured by
+setting <code>innodb_undo_log_encrypt=ON</code>.</li>
+<li><strong>Doublewrite Buffer:</strong> MySQL automatically encrypts
+pages written to the doublewrite buffer if the originating tablespace is
+encrypted.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>

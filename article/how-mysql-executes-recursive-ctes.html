@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R4Y4YXFHZS"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag(){
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+
+        gtag('config', 'G-R4Y4YXFHZS');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How MySQL Executes Recursive CTEs - mysql</title>
+    <meta name="description" content="This article explains how MySQL implements and executes recursive Common Table Expressions (CTEs). We will cover the internal mechanics of recursive queries, including how MySQL uses temporary tables to manage intermediate states, the step-by-step execut">
+    <link rel="canonical" href="https://salivity.github.io/mysql/article/how-mysql-executes-recursive-ctes">
+    <link rel="icon" href="/mysql/favicon.ico">
+    <link rel="stylesheet" href="/mysql/css/style.css">
+    <link media="print" rel="stylesheet" href="/mysql/css/print.css">
+    <script src="/mysql/js/fuse.min.js"></script>
+    <script src="/mysql/js/script.js"></script>
+    <script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.1.3/tex-chtml.min.js" defer></script>
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="How MySQL Executes Recursive CTEs - mysql" />
+    <meta property="og:url" content="https://salivity.github.io/mysql/article/how-mysql-executes-recursive-ctes" />
+    <meta property="og:image:url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:secure_url" content="https://salivity.github.io/mysql/images/open-graph/default.webp" />
+    <meta property="og:image:width" content="1120" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:description" content="This article explains how MySQL implements and executes recursive Common Table Expressions (CTEs). We will cover the internal mechanics of recursive queries, including how MySQL uses temporary tables to manage intermediate states, the step-by-step execut" />
+    <link rel="manifest" href="/mysql/pwa/manifest.json" />
+</head>
+<body>
+    <header>
+        <a href="/mysql/" aria-label="Go To Home Page" title="Go To Home Page" id="logo">
+            <span>salivity.github.io/</span><span>mysql</span>
+        </a>
+        <nav>
+            <ul class="header-links">
+                <li><a href="https://github.com/salivity" title="Github" aria-label="Go To Github Profile Page"><svg class="svg-icon" focusable="false" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 1.27a11 11 0 00-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.64-3.67-1.46-3.67-1.46-.55-1.29-1.28-1.65-1.28-1.65-.92-.65.1-.65.1-.65 1.1 0 1.73 1.1 1.73 1.1.92 1.65 2.57 1.2 3.21.92a2 2 0 01.64-1.47c-2.47-.27-5.04-1.19-5.04-5.5 0-1.1.46-2.1 1.2-2.84a3.76 3.76 0 010-2.93s.91-.28 3.11 1.1c1.8-.49 3.7-.49 5.5 0 2.1-1.38 3.02-1.1 3.02-1.1a3.76 3.76 0 010 2.93c.83.74 1.2 1.74 1.2 2.94 0 4.21-2.57 5.13-5.04 5.4.45.37.82.92.82 2.02v3.03c0 .27.1.64.73.55A11 11 0 0012 1.27"></path></svg></a></li>
+                <li><a href="/mysql/search" title="Search" aria-label="Go To Search Page"><svg class="svg-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14"></path></svg></a></li>
+                <li><a id="theme-toggle" title="Theme" href="javascript:void(0);" aria-label="Toggle Website Theme"></a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <article><h1 id="how-mysql-executes-recursive-ctes">How MySQL Executes Recursive
+CTEs</h1>
+<p>This article explains how MySQL implements and executes recursive
+Common Table Expressions (CTEs). We will cover the internal mechanics of
+recursive queries, including how MySQL uses temporary tables to manage
+intermediate states, the step-by-step execution loop of anchor and
+recursive members, and the system variables that control execution
+limits to prevent infinite loops.</p>
+<h2 id="the-structure-of-a-recursive-cte">The Structure of a Recursive
+CTE</h2>
+<p>In MySQL 8.0 and later, a recursive CTE is defined using the
+<code>WITH RECURSIVE</code> syntax. It consists of two main components
+separated by a set operator, typically <code>UNION ALL</code> or
+<code>UNION</code>:</p>
+<ol type="1">
+<li><strong>The Anchor Member:</strong> A non-recursive select statement
+that generates the initial base result set.</li>
+<li><strong>The Recursive Member:</strong> A select statement that
+references the CTE itself. This member reads the output of the previous
+iteration to generate new rows.</li>
+</ol>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> RECURSIVE cte_name <span class="kw">AS</span> (</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Anchor Member</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="op">..</span>. </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">UNION</span> <span class="kw">ALL</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Recursive Member</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="op">..</span>. <span class="kw">FROM</span> cte_name <span class="kw">WHERE</span> <span class="op">..</span>.</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> cte_name;</span></code></pre></div>
+<h2 id="how-mysql-implements-recursive-ctes-internally">How MySQL
+Implements Recursive CTEs Internally</h2>
+<p>MySQL executes recursive CTEs using memory-based or disk-based
+internal temporary tables. Because a recursive query must build upon the
+results of its previous step, MySQL manages the execution state using
+two specific temporary tables:</p>
+<ul>
+<li><strong>The Working Table (old_table):</strong> Stores the rows
+produced by the immediate previous iteration. The recursive member reads
+from this table.</li>
+<li><strong>The Intermediate Table (new_table):</strong> Stores the new
+rows generated by the current iteration of the recursive member.</li>
+</ul>
+<p>By separating the reading and writing phases into these two tables,
+MySQL avoids reading from and writing to the same dataset
+simultaneously.</p>
+<h2 id="step-by-step-execution-flow">Step-by-Step Execution Flow</h2>
+<p>When MySQL executes a recursive CTE, it follows a strict iterative
+loop:</p>
+<h3 id="step-1-execute-the-anchor-member">Step 1: Execute the Anchor
+Member</h3>
+<p>MySQL runs the anchor member first. The resulting rows are written to
+two places:</p>
+<ul>
+<li>The final query result accumulator.</li>
+<li>The <strong>Working Table</strong>, which prepares the data for the
+first recursive step.</li>
+</ul>
+<h3 id="step-2-execute-the-recursive-member">Step 2: Execute the
+Recursive Member</h3>
+<p>MySQL executes the recursive member. When the query references the
+CTE name, MySQL reads the data from the <strong>Working Table</strong>.
+The output generated by this step is written to the <strong>Intermediate
+Table</strong>.</p>
+<h3 id="step-3-evaluate-and-swap">Step 3: Evaluate and Swap</h3>
+<p>MySQL checks the <strong>Intermediate Table</strong> to determine the
+next action:</p>
+<ul>
+<li><strong>If the Intermediate Table is empty:</strong> The recursion
+has reached its natural end. The loop terminates, and MySQL returns the
+accumulated result set to the client.</li>
+<li><strong>If the Intermediate Table contains rows:</strong>
+<ol type="1">
+<li>The rows in the Intermediate Table are appended to the final query
+result accumulator.</li>
+<li>The <strong>Working Table</strong> is cleared.</li>
+<li>The contents of the <strong>Intermediate Table</strong> are moved
+(swapped) into the <strong>Working Table</strong>.</li>
+<li>The <strong>Intermediate Table</strong> is cleared.</li>
+</ol></li>
+</ul>
+<h3 id="step-4-repeat">Step 4: Repeat</h3>
+<p>MySQL returns to <strong>Step 2</strong> and runs the recursive
+member again using the updated Working Table.</p>
+<h2 id="recursion-safety-safeguards">Recursion Safety Safeguards</h2>
+<p>Because recursive queries can easily fall into infinite loops if the
+termination condition is poorly written, MySQL enforces safety limits
+during execution:</p>
+<ul>
+<li><strong><code>cte_max_recursion_depth</code></strong>: This system
+variable limits the maximum number of times the recursive loop can
+iterate. By default, it is set to 1000. If a CTE exceeds this number of
+iterations, MySQL halts execution and throws an error.</li>
+<li><strong><code>max_execution_time</code></strong>: This variable
+limits the overall execution time of the SELECT statement in
+milliseconds, preventing runaway queries from consuming server resources
+indefinitely.</li>
+</ul></article>
+        <div id=comments-container></div>
+
+        <script>
+            const utterancesScript = document.createElement('script');
+            
+            utterancesScript.setAttribute('src', 'https://utteranc.es/client.js');
+            utterancesScript.setAttribute('repo', 'salivity/mysql'); 
+            utterancesScript.setAttribute('issue-term', 'pathname'); 
+            utterancesScript.setAttribute('theme', localStorage.getItem('theme') === 'dark' ? 'github-dark' : 'github-light'); 
+            utterancesScript.setAttribute('crossorigin', 'anonymous');
+            utterancesScript.async = true;
+
+            document.getElementById('comments-container').appendChild(utterancesScript);
+        </script>
+    
+    </main>
+    <footer>
+        <nav>
+            <ul class="footer-links">
+                <li><a href="/mysql/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/mysql/terms-and-conditions">Terms and Conditions</a></li>
+            </ul>
+        </nav>
+        <div class="copyright">
+            Copyright &copy; <span id="current-year"></span>
+        </div>
+    </footer>
+</body>
+</html>
