@@ -1,0 +1,1202 @@
+[
+  [
+    200,
+    "How MySQL Prepared Statements Work: Security and Speed",
+    "Prepared statements are a fundamental feature in MySQL designed to protect databases from SQL injection attacks and optimize query execution speeds. This article explores the internal mechanics of how the MySQL server interprets and processes prepared st",
+    false
+  ],
+  [
+    199,
+    "MySQL innodb_file_per_table Disk Space Management",
+    "This article explores how the innodbfilepertable configuration affects disk space management in MySQL. We will examine the operational differences between storing all data in a single shared system tablespace versus utilizing individual table files, focu",
+    false
+  ],
+  [
+    198,
+    "Safely Alter Large MySQL Tables with Online DDL",
+    "Altering large production MySQL tables can cause downtime, lock databases, and degrade application performance if done incorrectly. This article explains how to safely execute schema changes on massive MySQL tables using native Online DDL features, along",
+    false
+  ],
+  [
+    197,
+    "Guide to MySQL group_replication_consistency",
+    "This article explores the vital role of the groupreplicationconsistency parameter in configuring and managing MySQL InnoDB Clusters. We will examine how this system variable controls transaction consistency across database nodes, detail the different con",
+    false
+  ],
+  [
+    196,
+    "MySQL Transaction Tracking in Performance Schema",
+    "This article explains how MySQL monitors and records the states of database transactions using its Performance Schema engine. It covers the specific event tables used for tracking, the setup required to enable transaction instrumentation, and how to inte",
+    false
+  ],
+  [
+    195,
+    "MySQL Query Rewrite Plugin Performance Trade-Offs",
+    "This article examines the performance trade-offs of enabling the MySQL query rewrite plugin. While this tool is invaluable for modifying problematic SQL statements on the fly without changing application code, it introduces systemic overheads including i",
+    false
+  ],
+  [
+    194,
+    "How to Configure MySQL to Use TLS 1.3",
+    "Securing database communication is critical for protecting sensitive data from interception and tampering. This article provides a direct guide on how to configure a MySQL instance to exclusively use TLS 1.3 for all incoming client connections. You will",
+    false
+  ],
+  [
+    193,
+    "MySQL master_info_repository and relay_log_info_repository",
+    "This article explains the purpose of the masterinforepository and relayloginforepository system variables in MySQL replication. It covers what these settings do, the differences between their storage options, and why configuring them correctly is critica",
+    false
+  ],
+  [
+    192,
+    "How MySQL Enterprise Masking Protects Data Privacy",
+    "Data privacy regulations like GDPR, PCI-DSS, and HIPAA require organizations to protect sensitive personal data from unauthorized exposure. This article explains how the MySQL Enterprise Masking and De-identification component safeguards sensitive inform",
+    false
+  ],
+  [
+    191,
+    "MySQL for Time-Series Data Design Considerations",
+    "While relational databases are not traditionally built for time-series workloads, MySQL can be effectively optimized for this purpose with the right architectural choices. This article explores the critical design considerations for using MySQL to store",
+    false
+  ],
+  [
+    190,
+    "How MySQL Converts Temporary Tables to Disk",
+    "This article explains how MySQL manages internal implicit temporary tables, focusing on the transition from memory-based storage to disk-based storage during query execution. You will learn about the triggers that initiate this conversion, the underlying",
+    false
+  ],
+  [
+    189,
+    "How to Use MySQL ANALYZE TABLE to Update Key Distributions",
+    "Over time, frequent insert, update, and delete operations can cause MySQL's query optimizer to make suboptimal execution choices due to outdated index statistics. This article provides a direct guide on how to use the ANALYZE TABLE statement in MySQL to",
+    false
+  ],
+  [
+    188,
+    "MySQL Asynchronous Connection Failover Prerequisites",
+    "Setting up asynchronous connection failover in MySQL ensures high availability by automatically switching replica connections to a new source if the primary source fails. This article outlines the essential system requirements, configuration settings, an",
+    false
+  ],
+  [
+    187,
+    "How MySQL Allocates Sort Buffer Memory",
+    "This article explains how MySQL allocates memory for sort buffers during complex query execution. It covers the role of the sortbuffersize system variable, how memory is allocated per-session and per-query, and the transition from in-memory sorting to di",
+    false
+  ],
+  [
+    186,
+    "Impact of Setting MySQL long_query_time to 0",
+    "Setting the MySQL longquerytime system variable to zero is a diagnostic technique used to log every single SQL query executed by the database server to the slow query log. While this provides comprehensive visibility for query profiling, debugging, and p",
+    false
+  ],
+  [
+    185,
+    "How to Fix Corrupted InnoDB Tablespace in MySQL",
+    "MySQL database corruption can halt your applications and cause data loss. This guide provides a straightforward, step-by-step approach to diagnosing InnoDB tablespace corruption using MySQL error logs and resolving the issue safely using the innodbforcer",
+    false
+  ],
+  [
+    184,
+    "The Role of Server UUID in MySQL Replication",
+    "This article explains the crucial role of the server Universally Unique Identifier (UUID) within a MySQL replication topology. It details how MySQL uses this unique 128-bit identifier to distinguish individual servers, manage Global Transaction Identifie",
+    false
+  ],
+  [
+    183,
+    "MySQL Transactions with Non Transactional Tables",
+    "This article explains how MySQL handles transactions that involve a mix of transactional (such as InnoDB) and non-transactional (such as MyISAM) storage engines. You will learn how MySQL behaves during commits and rollbacks in these scenarios, the risks",
+    false
+  ],
+  [
+    182,
+    "mysql_native_password vs caching_sha2_password",
+    "This article compares MySQL's traditional mysqlnativepassword authentication with the modern cachingsha2password default. We will analyze their key differences in security, performance, and compatibility to help you understand why MySQL transitioned to t",
+    false
+  ],
+  [
+    181,
+    "Use MySQL Performance Schema to Find Memory Leaks",
+    "MySQL can sometimes experience unexpected memory growth, which often points to memory leaks within the database server, its storage engines, or installed plugins. This article provides a straightforward, step-by-step guide on how to enable, configure, an",
+    false
+  ],
+  [
+    180,
+    "MySQL Block Nested Loop Join Explained",
+    "This article provides a comprehensive overview of the Block Nested Loop (BNL) join algorithm in MySQL, detailing how it optimizes database queries. It covers the core mechanics of the algorithm, how the join buffer is utilized to minimize disk I/O, and t",
+    false
+  ],
+  [
+    179,
+    "MySQL Point-in-Time Recovery for Dropped Schema",
+    "Dropping a MySQL schema by accident can lead to severe data loss, but Point-in-Time Recovery (PITR) allows you to restore your database to the exact millisecond before the destructive command was executed. This article provides a direct, step-by-step gui",
+    false
+  ],
+  [
+    178,
+    "MySQL InnoDB Redo Log Sizing Best Practices",
+    "Properly sizing the MySQL InnoDB redo log files is crucial for optimizing database write performance and ensuring rapid crash recovery. This article covers the essential best practices for determining the ideal size of your redo logs, outlines the trade-",
+    false
+  ],
+  [
+    177,
+    "MySQL Subquery Flattening into Semi-Joins",
+    "This article explains how the MySQL optimizer enhances database performance by flattening subqueries into semi-joins. You will learn what semi-joins are, the specific criteria MySQL uses to trigger this optimization, and the five core execution strategie",
+    false
+  ],
+  [
+    176,
+    "How MySQL Table Cache Speeds Up Query Execution",
+    "To execute database queries efficiently, MySQL must minimize disk interactions and system-level overhead. This article explains how MySQL utilizes its internal table cache—specifically divided into the table definition cache and the table open cache—",
+    false
+  ],
+  [
+    175,
+    "Configure MySQL GTID Consistency",
+    "Enforcing Global Transaction Identifier (GTID) consistency on a MySQL source server ensures that every transaction is assigned a unique identifier, simplifying replication management and preventing data drift. This article provides a straightforward, ste",
+    false
+  ],
+  [
+    174,
+    "Unindexed Foreign Keys MySQL Performance Impact",
+    "Failing to index foreign key columns in MySQL can lead to severe database degradation, particularly under write-heavy workloads. This article provides a clear overview of the performance consequences of unindexed foreign keys, detailing how they cause sl",
+    false
+  ],
+  [
+    173,
+    "How MySQL Uses Resource Groups to Manage CPU",
+    "MySQL manages CPU resources for specific threads through a feature called Resource Groups. This article provides an overview of how MySQL administrators can create, configure, and assign resource groups to regulate the CPU affinity and thread priority of",
+    false
+  ],
+  [
+    172,
+    "MySQL max_allowed_packet in Bulk Operations",
+    "During large-scale database migrations or bulk data loads, MySQL administrators often encounter network-related errors that can halt data insertion. This article explains the significance of the maxallowedpacket system variable in MySQL, how it impacts b",
+    false
+  ],
+  [
+    171,
+    "Track and Audit MySQL Database Schema Changes",
+    "Managing database evolution is critical for maintaining application stability, security, and compliance. This article explores the most effective methods and tools for tracking, versioning, and auditing changes made to a MySQL database schema over time.",
+    false
+  ],
+  [
+    170,
+    "Performance Impact of Too Many Columns in MySQL",
+    "Designing a database schema with too many columns in a single table—often referred to as a \"wide table\"—can severely degrade database performance. This article explains how excessive columns impact query execution speed, memory utilization, storage e",
+    false
+  ],
+  [
+    169,
+    "How MySQL CSV Engine Ensures Data Consistency",
+    "The MySQL CSV storage engine allows databases to read and write data directly in comma-separated values format. While it lacks advanced relational features like transactions and indexing, MySQL maintains basic data consistency through table-level locking",
+    false
+  ],
+  [
+    168,
+    "Purpose of Default Expression in MySQL",
+    "This article explains the purpose, functionality, and benefits of the DEFAULT expression attribute for columns in MySQL. It covers how this attribute allows databases to automatically assign dynamic values to columns during row insertion, thereby ensurin",
+    false
+  ],
+  [
+    167,
+    "View Raw MySQL Transactions Using mysqlbinlog",
+    "MySQL's binary log (binlog) records all DDl and DML events that modify database structure or content, which is essential for replication and data recovery. This guide demonstrates how to use the mysqlbinlog command-line utility to convert raw, binary tra",
+    false
+  ],
+  [
+    166,
+    "Constraints of Mixing MySQL Storage Engines",
+    "Mixing different storage engines, such as InnoDB and MyISAM, within a single MySQL query is technically permissible but introduces severe operational constraints. This article outlines the critical limitations of executing cross-engine queries, focusing",
+    false
+  ],
+  [
+    165,
+    "How innodb_log_buffer_size Affects MySQL Memory",
+    "This article explains how MySQL utilizes the innodblogbuffersize configuration parameter to manage memory for database transactions. We will explore how the InnoDB storage engine buffers write-ahead log data in RAM, how this memory is flushed to disk, an",
+    false
+  ],
+  [
+    164,
+    "Understanding the MySQL Handlerton Interface",
+    "This article provides an in-depth look at the MySQL handlerton (handler singleton) interface, a core component of the MySQL pluggable storage engine architecture. Readers will learn about its definition, its structural role in separating the SQL parser f",
+    false
+  ],
+  [
+    163,
+    "Log MySQL Deadlocks to the Error Log",
+    "This article provides a straightforward guide on how to configure MySQL to automatically write deadlock information directly to the system error log. By enabling this configuration, database administrators can easily monitor and troubleshoot transactiona",
+    false
+  ],
+  [
+    162,
+    "MySQL InnoDB ReplicaSet High Availability Benefits",
+    "MySQL InnoDB ReplicaSet provides a simplified, lightweight solution for organizations seeking basic high availability and read scalability without the complexity of a full group replication cluster. This article explores the structural benefits of implem",
+    false
+  ],
+  [
+    161,
+    "MySQL Session vs Global Variables Explained",
+    "MySQL utilizes two distinct scopes for its configuration variables—global and session—to balance overall server performance with individual client connection requirements. This article explains the operational differences between session-level and gl",
+    false
+  ],
+  [
+    160,
+    "Difference Between Spatial and B-Tree Index in MySQL",
+    "In MySQL, database indexing is crucial for query performance, but different data types require different indexing structures. This article explains the key differences between a spatial index (using R-Trees) and a standard B-Tree index, detailing how the",
+    false
+  ],
+  [
+    159,
+    "Troubleshoot and Fix MySQL High CPU Usage",
+    "High CPU usage in MySQL can severely degrade database performance and cause application latency. This guide provides a straightforward approach to identifying the root causes of MySQL CPU spikes—such as inefficient queries, missing indexes, and misconf",
+    false
+  ],
+  [
+    158,
+    "What is innodb_flush_log_at_trx_commit in MySQL",
+    "This article explains the role of the innodbflushlogattrxcommit configuration parameter in MySQL, detailing how it balances ACID compliance and database performance. We will explore its three settings (0, 1, and 2), their impact on data durability, and h",
+    false
+  ],
+  [
+    157,
+    "MySQL Table Cache Eviction and Max Connections",
+    "This article explains how MySQL manages table cache eviction when the server reaches its maximum connection limit. It details the relationship between the tableopencache and maxconnections system variables, the mechanism MySQL uses to close and evict idl",
+    false
+  ],
+  [
+    156,
+    "MySQL Shell Features for Managing Databases",
+    "MySQL Shell is an advanced command-line client and code editor designed to simplify the administration and development of MySQL databases. This article explores the primary features of the MySQL Shell utility, highlighting how its multi-language support,",
+    false
+  ],
+  [
+    155,
+    "Analyze MySQL Deadlocks with SHOW ENGINE INNODB STATUS",
+    "This article provides a practical guide on how to locate, read, and analyze deadlock information using the SHOW ENGINE INNODB STATUS command in MySQL. You will learn how to identify the conflicting transactions, understand the specific locks causing the",
+    false
+  ],
+  [
+    154,
+    "mysqlpump vs mysqldump: MySQL Backup Tools Compared",
+    "This article compares MySQL's legacy backup utility, mysqldump, with its newer counterpart, mysqlpump. It highlights the key architectural differences, performance benefits, parallel processing capabilities, and specific use cases for each tool to help d",
+    false
+  ],
+  [
+    153,
+    "Difference Between FORCE INDEX and USE INDEX in MySQL",
+    "This article explains how MySQL processes index hints, specifically focusing on the behavioral differences between the FORCE INDEX and USE INDEX directives. By understanding how the MySQL query optimizer interprets these hints, database administrators an",
+    false
+  ],
+  [
+    152,
+    "Limitations of MySQL Federated Storage Engine",
+    "The MySQL Federated storage engine allows developers to access data from remote MySQL databases without using replication or clustering technology. While this offers great flexibility for distributed queries, the engine comes with several critical operat",
+    false
+  ],
+  [
+    151,
+    "How to Configure Audit Logging in MySQL",
+    "This guide explains how to enable and configure audit logging in a MySQL database instance to track and monitor user activity. It covers the installation of the audit log plugin, configuration of essential system variables, and setting up filters to reco",
+    false
+  ],
+  [
+    150,
+    "MySQL General Query Log for Troubleshooting",
+    "This article explains the function of the general query log in MySQL troubleshooting, detailing how it helps database administrators track client connections and executed queries. We will cover how to enable this log, its primary use cases in diagnosing",
+    false
+  ],
+  [
+    149,
+    "How MySQL Batched Key Access Join Optimization Works",
+    "Batched Key Access (BKA) is a highly efficient join optimization algorithm in MySQL designed to accelerate index lookups during table joins. By buffering keys from an outer table and using the Multi-Range Read (MRR) interface to group and sort them, BKA",
+    false
+  ],
+  [
+    148,
+    "MySQL InnoDB Cluster Architecture Components",
+    "A MySQL InnoDB Cluster provides a complete, high-availability database solution with automated failover and write-handling capabilities. This article explains the three core architectural components of a MySQL InnoDB Cluster setup—MySQL Group Replicati",
+    false
+  ],
+  [
+    147,
+    "Safely Purge MySQL Binary Logs in a Cluster",
+    "This article explains how to safely remove expired MySQL binary log (binlog) files from a database cluster without disrupting replication or causing data inconsistency. You will learn how to verify replication status, execute the correct SQL commands for",
+    false
+  ],
+  [
+    146,
+    "Difference Between Visible and Invisible Columns in MySQL",
+    "This article explores the differences between visible and invisible columns in MySQL, a feature introduced in MySQL 8.0.13. You will learn how these column types behave during data retrieval, how they impact insert operations, and the practical use cases",
+    false
+  ],
+  [
+    145,
+    "How MySQL Optimizer Uses Cost-Based Models",
+    "The MySQL query optimizer plays a crucial role in database performance by determining the most efficient way to execute a SQL query. By employing a Cost-Based Optimizer (CBO) model, MySQL evaluates various potential execution plans and assigns a numeric",
+    false
+  ],
+  [
+    144,
+    "Understanding MySQL Replication Channels",
+    "This article explains the purpose and functionality of replication channels in MySQL database topologies. It covers how replication channels enable multi-source replication, how they manage independent data streams from multiple sources, and why they are",
+    false
+  ],
+  [
+    143,
+    "How to Implement Data Masking in MySQL",
+    "Data masking is a crucial security technique used to protect sensitive user information, such as personally identifiable information (PII), from unauthorized access while maintaining its usability. This article provides a straightforward guide on how to",
+    false
+  ],
+  [
+    142,
+    "Risks of Changing innodb_page_size in MySQL",
+    "Modifying the innodbpagesize parameter in MySQL can optimize performance for specific workloads, but it carries significant operational risks. This article examines the critical hazards of changing this setting, including the requirement for complete dat",
+    false
+  ],
+  [
+    141,
+    "MySQL Fractional Seconds Precision in Time Data Types",
+    "This article explains how MySQL handles fractional seconds precision for temporal data types, including TIME, DATETIME, and TIMESTAMP. You will learn how to define fractional precision, how MySQL manages rounding during data insertion, and the storage im",
+    false
+  ],
+  [
+    140,
+    "What Is MySQL Undo Tablespace Truncation?",
+    "This article explains the function and mechanism of the MySQL undo tablespace truncation process. You will learn how MySQL manages the size of undo tablespaces by reclaiming disk space occupied by inactive undo logs, why this process is crucial for datab",
+    false
+  ],
+  [
+    139,
+    "Efficiently Store and Query UUIDs in MySQL",
+    "Universally Unique Identifiers (UUIDs) are excellent for generating unique keys across distributed systems, but storing them as standard 36-character strings can severely degrade MySQL database performance. This article explains how to optimize MySQL sto",
+    false
+  ],
+  [
+    138,
+    "MySQL Multi-Range Read Optimization Explained",
+    "This article explains how MySQL utilizes the Multi-Range Read (MRR) optimization to enhance query performance and disk I/O efficiency. We will explore the underlying mechanism of MRR, how it transitions random disk reads into sequential ones using a memo",
+    false
+  ],
+  [
+    137,
+    "Understanding the MySQL Component Infrastructure",
+    "This article provides a comprehensive overview of the MySQL component infrastructure introduced in MySQL 8.0. It explains why this modern architecture was developed, how it improves upon the legacy plugin system, and the primary benefits it offers to dat",
+    false
+  ],
+  [
+    136,
+    "Monitor and Debug MySQL Lock Wait Timeouts",
+    "This article provides a practical guide on how to detect, analyze, and resolve lock wait timeouts in a MySQL database environment. You will learn how to identify the system variables governing these timeouts, use built-in diagnostic tools and information",
+    false
+  ],
+  [
+    135,
+    "MySQL Group Replication: Single-Primary vs Multi-Primary",
+    "This article explains the core differences between single-primary and multi-primary modes in MySQL Group Replication. It covers how each mode manages write operations, handles transaction conflicts, impacts application design, and behaves during node fai",
+    false
+  ],
+  [
+    134,
+    "MySQL Cluster NDB vs Standard MySQL Instance",
+    "This article explores the architectural and operational differences between a MySQL Cluster running the NDB (Network Database) storage engine and a standard MySQL database instance. While a standard MySQL instance relies on local storage engines like Inn",
+    false
+  ],
+  [
+    133,
+    "Understanding secure_file_priv in MySQL Security",
+    "The securefilepriv server variable is a critical security feature in MySQL that controls the directory paths from which data can be imported or exported. This article explains the significance of securefilepriv in protecting database servers from unautho",
+    false
+  ],
+  [
+    132,
+    "How MySQL Manages Internal Temporary Tables",
+    "During the execution of complex queries involving operations like GROUP BY, DISTINCT, or UNION, MySQL often needs to create internal temporary tables to hold intermediate result sets. This article explores how MySQL manages these temporary tables, detail",
+    false
+  ],
+  [
+    131,
+    "MySQL Blackhole Storage Engine Use Cases",
+    "The MySQL Blackhole storage engine acts as a \"dummy\" engine that accepts data but immediately discards it without storing it on disk, behaving similarly to the /dev/null device in Unix-like systems. While a database engine that does not save data may see",
+    false
+  ],
+  [
+    130,
+    "How to Use MySQL Optimizer Hints to Override Query Plans",
+    "MySQL's query optimizer usually selects the most efficient execution path, but manual SQL tuning is sometimes required to achieve peak performance. This guide explains how to utilize optimizer hints in MySQL to override the default query execution plan,",
+    false
+  ],
+  [
+    129,
+    "Configure MySQL Multi-Threaded Replication to Reduce Lag",
+    "This article provides a step-by-step guide on how to configure multi-threaded replica workers in MySQL to mitigate replication lag. You will learn how multi-threaded replication works, the key configuration parameters required to enable it, and how to ve",
+    false
+  ],
+  [
+    128,
+    "How MySQL Enterprise Firewall Prevents SQL Injection",
+    "The MySQL Enterprise Firewall is a robust security tool designed to defend databases against unauthorized access and SQL injection attacks. This article explains how the firewall operates, specifically focusing on its use of query whitelisting, distinct",
+    false
+  ],
+  [
+    127,
+    "MySQL Functional Indexes on Expressions",
+    "Indexing expressions directly is a powerful database optimization technique introduced in MySQL 8.0. This article explores the strategic benefits of using functional indexes on expressions, detailing how they improve query performance, simplify database",
+    false
+  ],
+  [
+    126,
+    "How to Define and Enforce CHECK Constraints in MySQL",
+    "This article provides a straightforward guide on how to define and enforce CHECK constraints in MySQL. You will learn the syntax for creating these constraints during table creation, how to add them to existing tables, and how MySQL handles their enforce",
+    false
+  ],
+  [
+    125,
+    "MySQL Connection Control Plugin Brute Force Protection",
+    "This article explains the purpose and functionality of the MySQL connection control plugin in mitigating brute-force attacks. We will cover how the plugin delays connection responses after consecutive failed login attempts, how to configure its key varia",
+    false
+  ],
+  [
+    124,
+    "MySQL Lateral Derived Tables for Complex Subqueries",
+    "This article explains how to use lateral derived tables in MySQL to execute advanced, dependency-based subqueries. Introduced in MySQL 8.0, the LATERAL keyword allows a derived table to reference columns from preceding tables in the same FROM clause. You",
+    false
+  ],
+  [
+    123,
+    "MySQL Index Merge Optimization Explained",
+    "This article explores how the MySQL query optimizer evaluates and applies index merge optimizations to improve query performance. It covers the different types of index merges—intersection, union, and sort-union—how the cost-based optimizer decides t",
+    false
+  ],
+  [
+    122,
+    "InnoDB Dynamic vs Compressed Row Format Differences",
+    "Choosing the right row format in MySQL's InnoDB storage engine is crucial for optimizing database performance and storage efficiency. This article explains the structural differences between the DYNAMIC and COMPRESSED row formats, focusing on how they st",
+    false
+  ],
+  [
+    121,
+    "Migrate MySQL Data Using Transportable Tablespaces",
+    "Migrating large MySQL databases using traditional logical backup tools like mysqldump can be highly time-consuming. MySQL's transportable tablespaces feature allows you to copy physical InnoDB .ibd tablespace files directly between different server insta",
+    false
+  ],
+  [
+    120,
+    "How MySQL Thread Pool Handles High Concurrency",
+    "To handle high numbers of concurrent database connections without degrading performance, database administrators often turn to the MySQL thread pool plugin. This article explains how the thread pool plugin optimizes system resources, prevents CPU thrashi",
+    false
+  ],
+  [
+    119,
+    "How to Configure Dual Passwords in MySQL",
+    "This article explains how to configure and use the dual password feature in MySQL to achieve seamless credential rotation without application downtime. You will learn the SQL commands required to introduce a secondary password, transition your applicatio",
+    false
+  ],
+  [
+    118,
+    "Security Benefits of MySQL Password Validation",
+    "Securing database access is a fundamental aspect of safeguarding sensitive data. This article outlines the primary security advantages of implementing the MySQL password validation component, explaining how it enforces password complexity, prevents the u",
+    false
+  ],
+  [
+    117,
+    "MySQL Connection Character Set Conversion",
+    "When a client communicates with a MySQL server, data must often be converted between different character encodings to ensure text is stored and retrieved accurately. This article explains how MySQL manages character set conversion during a connection ses",
+    false
+  ],
+  [
+    116,
+    "What is MySQL Metadata Lock in DDL?",
+    "When executing Data Definition Language (DDL) statements in MySQL, the database system employs a crucial concurrency control mechanism known as the Metadata Lock (MDL). This article explains the core function of MDL during DDL operations, how it prevents",
+    false
+  ],
+  [
+    115,
+    "How to Use ROW_NUMBER and DENSE_RANK in MySQL",
+    "This article explains how to write MySQL queries using the ROWNUMBER() and DENSERANK() window functions. You will learn the fundamental syntax of these functions, understand how they differ when ranking data, and see practical query examples that you can",
+    false
+  ],
+  [
+    114,
+    "Statement vs Row-Based Binary Logging in MySQL",
+    "MySQL offers two primary formats for binary logging: Statement-Based Replication (SBR) and Row-Based Replication (RBR). This article examines the key operational differences between these two logging formats, comparing how they record data changes, their",
+    false
+  ],
+  [
+    113,
+    "How MySQL Executes Recursive CTEs",
+    "This article explains how MySQL implements and executes recursive Common Table Expressions (CTEs). We will cover the internal mechanics of recursive queries, including how MySQL uses temporary tables to manage intermediate states, the step-by-step execut",
+    false
+  ],
+  [
+    112,
+    "MySQL Column Histograms Performance Benefits",
+    "MySQL column histograms, introduced in version 8.0, provide the query optimizer with detailed statistics about data distribution in non-indexed columns. This article explores how histograms work, their specific performance advantages over traditional ind",
+    false
+  ],
+  [
+    111,
+    "How to Use MySQL Clone Plugin to Provision Replica",
+    "This article provides a step-by-step guide on how to use the MySQL clone plugin to provision a new replica instance. You will learn how to install the clone plugin on both the donor and recipient servers, configure the necessary user privileges, and exec",
+    false
+  ],
+  [
+    110,
+    "MySQL sys Schema Performance Tuning Guide",
+    "The MySQL sys schema is a powerful, built-in toolset designed to simplify database administration and performance tuning. This article explores how the sys schema interprets complex data from the performanceschema and informationschema to provide actiona",
+    false
+  ],
+  [
+    109,
+    "How MySQL Multi-Source Replication Works",
+    "This article explains how MySQL handles multi-source replication, a feature that allows a single replica server to connect to and receive data from multiple source servers simultaneously. We will explore the underlying architecture, the role of replicati",
+    false
+  ],
+  [
+    108,
+    "How Strict SQL Mode Affects MySQL Data Insertion",
+    "Strict SQL mode in MySQL directly determines how the database engine handles invalid, missing, or out-of-range values during data insertion operations. When enabled, strict mode forces MySQL to reject invalid data and return an error, terminating the que",
+    false
+  ],
+  [
+    107,
+    "How to Configure and Use MySQL Invisible Indexes",
+    "Modern MySQL versions (8.0 and later) introduce invisible indexes, a powerful feature that allows database administrators to hide indexes from the query optimizer without actually dropping them. This article provides a practical guide on how to configure",
+    false
+  ],
+  [
+    106,
+    "MySQL Redo Log vs Undo Log: Key Differences",
+    "This article explores the core architectural differences between MySQL's redo logs and undo logs within the InnoDB storage engine. While both logs are essential for maintaining database transactions and preventing data corruption, they serve fundamentall",
+    false
+  ],
+  [
+    105,
+    "How MySQL Adaptive Hash Index Speeds Up Lookups",
+    "This article explores how MySQL's InnoDB storage engine utilizes the Adaptive Hash Index (AHI) to optimize database performance. We will examine the mechanics behind how InnoDB monitors index searches, automatically builds hash indexes in memory for freq",
+    false
+  ],
+  [
+    104,
+    "MySQL Memory Storage Engine for Temporary Data",
+    "This article explores the key advantages of using the MySQL Memory storage engine (formerly known as HEAP) for managing temporary data. We will examine how its in-memory architecture delivers lightning-fast read and write operations, reduces disk I/O bot",
+    false
+  ],
+  [
+    103,
+    "MySQL Spatial Data and GIS Functions Guide",
+    "Managing geographic and location-based data is a crucial requirement for modern applications. This article provides a practical guide on how to implement spatial data types and Geographic Information System (GIS) functions in a MySQL database. You will l",
+    false
+  ],
+  [
+    102,
+    "Purpose of the InnoDB Change Buffer in MySQL",
+    "This article explains the specific purpose, mechanics, and benefits of the change buffer in MySQL’s InnoDB storage engine. Readers will learn how this specialized data structure optimizes database performance by caching modifications to secondary index",
+    false
+  ],
+  [
+    101,
+    "How MySQL Doublewrite Buffer Prevents Partial Page Writes",
+    "This article explains how the MySQL InnoDB storage engine utilizes the doublewrite buffer to protect database integrity against partial page writes. You will learn about the mechanics of this feature, why standard recovery methods fall short during opera",
+    false
+  ],
+  [
+    100,
+    "Critical MySQL Metrics to Monitor in Production",
+    "Maintaining a healthy production MySQL server requires a balanced focus on both physical infrastructure and database-specific software performance. This article outlines the most critical hardware and software metrics database administrators must monitor",
+    false
+  ],
+  [
+    99,
+    "Guide to MySQL Event Scheduler Scheduled Tasks",
+    "The MySQL event scheduler is a powerful built-in feature that enables database administrators and developers to automate repetitive database tasks directly within the database server. This article explores how the event scheduler works, how to enable it,",
+    false
+  ],
+  [
+    98,
+    "Archive Large MySQL Tables Without Downtime",
+    "Managing rapidly growing MySQL tables is crucial for maintaining database performance and controlling storage costs. This article explores automated strategies to safely archive historical data from large MySQL tables without causing application downtime",
+    false
+  ],
+  [
+    97,
+    "Run MySQL Script from Command Line Automatically",
+    "Executing external SQL scripts automatically through the MySQL command-line client is a fundamental skill for database administrators and developers. This guide explains how to run .sql files using the command-line interface without manual intervention,",
+    false
+  ],
+  [
+    96,
+    "Purpose of OPTIMIZE TABLE in MySQL Administration",
+    "The OPTIMIZE TABLE command in MySQL is a critical database administration utility designed to reclaim unused physical storage space, defragment the data files, and rebuild indexes for improved query performance. This article explains the background purpo",
+    false
+  ],
+  [
+    95,
+    "How to Repair a Corrupted MySQL Table",
+    "Database corruption can lead to application downtime and data loss. This guide provides a straightforward, step-by-step approach to safely checking and repairing corrupted tables in a MySQL database. You will learn how to diagnose table issues, safely ba",
+    false
+  ],
+  [
+    94,
+    "MySQL Point-in-Time Recovery Using Binary Logs",
+    "Point-in-time recovery (PITR) in MySQL allows you to restore a database to a specific moment in time, minimizing data loss after an accidental deletion, corruption, or system crash. This process requires a previous full database backup and the binary log",
+    false
+  ],
+  [
+    93,
+    "How to Restore MySQL Database from SQL Dump File",
+    "Restoring a MySQL database from a standard SQL dump file is a fundamental task for database administrators and developers alike. This guide provides a straightforward, step-by-step walkthrough on how to efficiently import .sql backup files into a MySQL s",
+    false
+  ],
+  [
+    92,
+    "MySQL Physical Backup vs Logical Dump Advantages",
+    "When safeguarding MySQL databases, administrators must choose between logical dumps (such as mysqldump or mysqlpump) and physical backup tools (such as Percona XtraBackup or MySQL Enterprise Backup). This article explores the primary advantages of physic",
+    false
+  ],
+  [
+    91,
+    "How to Backup a MySQL Database Using mysqldump",
+    "Performing a logical backup of a MySQL database is an essential task for ensuring data safety and enabling easy migrations. This article provides a straightforward, step-by-step guide on how to use mysqldump, the default utility provided by MySQL for cre",
+    false
+  ],
+  [
+    90,
+    "Causes of MySQL Replication Data Drift",
+    "In MySQL replication setups, ensuring data consistency between the primary and secondary (replica) servers is critical for disaster recovery, load balancing, and data integrity. However, data drift—where the secondary server’s data silently diverges",
+    false
+  ],
+  [
+    89,
+    "Promote MySQL Replica to Master Database Safely",
+    "Promoting a MySQL replica to a master node is a critical database administration task required during planned maintenance, hardware upgrades, or disaster recovery. This article provides a step-by-step guide on how to safely transition a replica database",
+    false
+  ],
+  [
+    88,
+    "Role of GTID in MySQL Replication Explained",
+    "Global Transaction Identifiers (GTIDs) have revolutionized how database administrators manage, scale, and troubleshoot database clusters. This article explores the vital role of GTIDs in modern MySQL replication topologies, explaining how they simplify f",
+    false
+  ],
+  [
+    87,
+    "MySQL Router Role in Automatic Database Failover",
+    "This article explains how MySQL Router, the native middleware for MySQL, facilitates automatic failover in high-availability database environments. It covers the mechanics of how the router detects database state changes, redirects application traffic wi",
+    false
+  ],
+  [
+    86,
+    "MySQL Group Replication High Availability Architecture",
+    "This article explores the underlying architecture of MySQL Group Replication (MGR), a native high-availability solution designed for MySQL databases. It examines how MGR utilizes a shared-nothing, replicated state machine model, relies on the Paxos conse",
+    false
+  ],
+  [
+    85,
+    "How to Monitor MySQL Replication Lag",
+    "Monitoring replication lag between a MySQL source and its replica is crucial for ensuring data consistency, high availability, and timely backups. This article provides a straightforward guide on how database administrators can measure and monitor this l",
+    false
+  ],
+  [
+    84,
+    "Fix MySQL Replica Error 1062 Duplicate Entry",
+    "This article provides a step-by-step guide on how to recover a broken MySQL replica experiencing a duplicate key error (Error 1062). You will learn how to identify the conflicting data, safely resolve the inconsistency by either deleting the duplicate ro",
+    false
+  ],
+  [
+    83,
+    "MySQL Semi-Synchronous vs Asynchronous Replication",
+    "This article explains the key differences between MySQL semi-synchronous replication and traditional asynchronous replication. It covers how each method handles data transmission, the impact of each on write latency, and how to choose the right replicati",
+    false
+  ],
+  [
+    82,
+    "Function of Binary Log in MySQL Replication",
+    "This article explains the specific role of the binary log (binlog) in MySQL replication. It covers how the binary log records data modifications on the source database, how these events are transmitted to replica databases, and how replicas apply these l",
+    false
+  ],
+  [
+    81,
+    "Configure MySQL Master-Slave Replication",
+    "This guide provides a step-by-step walkthrough for configuring basic asynchronous master-slave (source-replica) replication in MySQL. You will learn how to configure the configuration files on both servers, create a dedicated replication user, synchroniz",
+    false
+  ],
+  [
+    80,
+    "When to Use FLUSH PRIVILEGES in MySQL",
+    "The FLUSH PRIVILEGES command is a vital tool in MySQL database administration used to reload the grant tables in the MySQL database. This article explains the exact purpose of this command, clarifies when it is necessary to run it, and highlights the sce",
+    false
+  ],
+  [
+    79,
+    "MySQL Data-at-Rest Encryption for Tables",
+    "This article explains how MySQL natively secures sensitive data-at-rest using InnoDB tablespace encryption. It covers the database's two-tier key architecture, the role of keyring plugins, and the practical steps required to enable and manage encryption",
+    false
+  ],
+  [
+    78,
+    "Security Benefits of Encrypted MySQL Remote Connections",
+    "Connecting to a MySQL database over a remote network poses significant security risks if the data travels in plaintext. This article explores the primary security benefits of using encrypted connections, specifically SSL/TLS, for MySQL remote clients. It",
+    false
+  ],
+  [
+    77,
+    "Force MySQL User to Change Password on Next Login",
+    "Managing database security often requires administrators to enforce password rotation policies or temporarily reset a user's credentials. In MySQL, you can easily force a user to change their password upon their next login attempt using the PASSWORD EXPI",
+    false
+  ],
+  [
+    76,
+    "How to Revoke MySQL User Privileges",
+    "Securing a database environment requires careful management of user permissions. This article provides a clear, step-by-step guide on how to revoke access rights from an existing MySQL user. You will learn how to log in to your MySQL server, view a user'",
+    false
+  ],
+  [
+    75,
+    "MySQL Roles: Simplify Database Privilege Management",
+    "Managing database permissions for dozens of users individually is highly inefficient and prone to human error. MySQL roles, introduced in version 8.0, solve this problem by allowing administrators to group privileges into a single container (a role) and",
+    false
+  ],
+  [
+    74,
+    "Role of MySQL User Table in Database Security",
+    "In MySQL, database security is anchored by the system user table, specifically stored as mysql.user. This article explores how this essential system table manages overall database security by controlling user authentication, defining global privileges, a",
+    false
+  ],
+  [
+    73,
+    "How MySQL Securely Authenticates Remote Users",
+    "This article explains the mechanisms MySQL uses to securely authenticate client connections originating from remote IP addresses. It covers the host-specific account verification process, the modern cryptographic authentication plugins utilized to protec",
+    false
+  ],
+  [
+    72,
+    "Grant Specific Database Privileges to MySQL User",
+    "Securing a database environment requires granting users only the minimum necessary permissions they need to perform their tasks. This article provides a direct, step-by-step guide on how to grant specific database privileges to a MySQL user, from connect",
+    false
+  ],
+  [
+    71,
+    "Create a MySQL User with a Secure Password",
+    "This article provides a straightforward, step-by-step guide on how to create a new user account in MySQL and assign a secure password. You will learn the exact SQL commands needed to create the user, grant the appropriate database privileges, and apply t",
+    false
+  ],
+  [
+    70,
+    "Understanding MySQL Autocommit Purpose and Impact",
+    "This article explores the purpose and impact of the autocommit variable within a MySQL database session. It explains how this setting controls transactional behavior, affects database write performance, and influences data integrity, while providing clea",
+    false
+  ],
+  [
+    69,
+    "How MySQL Prevents Phantom Reads in Repeatable Read",
+    "This article explains how phantom reads occur in database transactions and details the specific mechanisms MySQL's InnoDB storage engine uses to prevent them under the Repeatable Read isolation level. You will learn the difference between standard non-bl",
+    false
+  ],
+  [
+    68,
+    "How Long-Running Transactions Impact MySQL Undo Logs",
+    "Long-running transactions in MySQL can severely degrade database performance and stability by preventing the cleanup of the undo log. This article explains how open transactions force the InnoDB storage engine to retain historical data versions, leading",
+    false
+  ],
+  [
+    67,
+    "How to Use FOR UPDATE for Pessimistic Locking in MySQL",
+    "This article explains how to implement pessimistic locking in MySQL using the FOR UPDATE clause. You will learn the fundamental concepts of pessimistic locking, see how the FOR UPDATE statement works within database transactions, and explore practical SQ",
+    false
+  ],
+  [
+    66,
+    "Row-Level vs Table-Level Locking in MySQL",
+    "Database locking is a critical mechanism in MySQL used to manage concurrent access to data while maintaining consistency and integrity. This article explores the key differences between row-level locking and table-level locking in MySQL, explaining how e",
+    false
+  ],
+  [
+    65,
+    "How MySQL Uses MVCC to Manage Database Locking",
+    "This article explains how MySQL, specifically through its InnoDB storage engine, implements Multi-Version Concurrency Control (MVCC) to manage database locking. You will learn about the internal mechanisms of MVCC, including hidden row fields, undo logs,",
+    false
+  ],
+  [
+    64,
+    "MySQL Database Deadlocks: Causes and Resolutions",
+    "This article explains what causes database deadlocks in MySQL, specifically focusing on the InnoDB storage engine. It details the common scenarios that trigger these locking conflicts and describes the automatic mechanisms InnoDB uses to detect, resolve,",
+    false
+  ],
+  [
+    63,
+    "How to Start, Commit, and Rollback Transactions in MySQL",
+    "This article provides a quick and practical guide on how to manage database transactions in MySQL. You will learn how to use explicit transaction control statements to group multiple SQL queries into a single unit of work, ensuring data integrity by eith",
+    false
+  ],
+  [
+    62,
+    "MySQL InnoDB Default Transaction Isolation Level",
+    "Understanding the default transaction isolation level in MySQL's InnoDB storage engine is crucial for managing database concurrency, integrity, and performance. This article explains what the default isolation level is, how it functions under the hood to",
+    false
+  ],
+  [
+    61,
+    "How MySQL Enforces ACID Properties",
+    "This article explains how MySQL, primarily through its default InnoDB storage engine, ensures database transaction reliability by enforcing the ACID (Atomicity, Consistency, Isolation, Durability) properties. We will break down the specific internal mech",
+    false
+  ],
+  [
+    60,
+    "How to Optimize MySQL Slow Queries",
+    "The MySQL slow query log is an invaluable tool for identifying database bottlenecks that degrade application performance. This article provides a concise guide on how to locate these slow queries, analyze them using diagnostic tools, and apply effective",
+    false
+  ],
+  [
+    59,
+    "Monitor MySQL Query Performance with Performance Schema",
+    "This article provides a practical guide on how to monitor real-time query performance and execution times using the MySQL Performance Schema. You will learn how to verify that the Performance Schema is enabled, configure the necessary instruments and con",
+    false
+  ],
+  [
+    58,
+    "Impact of Heavy Writes on MySQL Index Maintenance",
+    "High-volume write operations in MySQL—such as frequent INSERT, UPDATE, and DELETE queries—can significantly degrade database performance due to the overhead of maintaining indexes. This article explains how heavy write traffic forces MySQL to constan",
+    false
+  ],
+  [
+    57,
+    "How MySQL Covering Indexes Improve Query Performance",
+    "In MySQL database optimization, a covering index is one of the most effective tools for accelerating query execution. This article explains how a covering index improves query performance by allowing the database engine to retrieve all requested data dir",
+    false
+  ],
+  [
+    56,
+    "How to Avoid MySQL Filesort with Indexing",
+    "In database optimization, a \"filesort\" operation occurs when MySQL must perform an extra sorting pass on the retrieved rows to satisfy an ORDER BY or GROUP BY clause. This article explains the underlying causes of filesort operations, why they can degrad",
+    false
+  ],
+  [
+    55,
+    "Identify and Remove Unused MySQL Indexes",
+    "Over time, MySQL databases accumulate redundant or unused indexes that degrade write performance and consume unnecessary disk space and memory. This article provides a straightforward guide on how to identify these performance-draining indexes using MySQ",
+    false
+  ],
+  [
+    54,
+    "Purpose of EXPLAIN Statement in MySQL",
+    "The EXPLAIN statement in MySQL is a powerful diagnostic tool used by developers and database administrators to analyze and optimize database queries. This article provides an overview of the purpose of EXPLAIN, how it works, and how to interpret its outp",
+    false
+  ],
+  [
+    53,
+    "How MySQL Uses B-Tree Indexes for Faster Queries",
+    "This article explains how MySQL utilizes B-Tree (specifically B+Tree) indexes to dramatically accelerate data retrieval operations. We will explore the structural design of these indexes, how they minimize disk I/O, the step-by-step traversal process dur",
+    false
+  ],
+  [
+    52,
+    "Clustered vs Secondary Index in MySQL InnoDB",
+    "In MySQL database management, understanding how data is stored and retrieved is crucial for database design and performance optimization. This article explains the fundamental differences between a clustered index and a secondary index within the InnoDB",
+    false
+  ],
+  [
+    51,
+    "How to Create a MySQL Composite Index on Multiple Columns",
+    "A composite index, also known as a multiple-column index, is a database index defined on two or more columns of a table. In MySQL, creating these indexes can significantly optimize query performance, especially for search queries that filter by multiple",
+    false
+  ],
+  [
+    50,
+    "How MySQL Optimizer Decides Table Join Order",
+    "This article explains how the MySQL Cost-Based Optimizer (CBO) determines the most efficient execution order when joining multiple tables. We will explore how the optimizer evaluates execution plans, utilizes table statistics, estimates query costs, and",
+    false
+  ],
+  [
+    49,
+    "What is a Self-Join in MySQL and When to Use It",
+    "A self-join in MySQL is a query technique where a table is joined with itself to compare rows within that same table. This article provides a clear explanation of how self-joins work in MySQL, explains the syntax using table aliases, and details the prim",
+    false
+  ],
+  [
+    48,
+    "How to Join Tables with NULL Values in MySQL",
+    "Joining tables in MySQL can lead to unexpected results or missing data when dealing with NULL values, as standard comparison operators like = do not match NULL to another NULL. This article provides a straightforward guide on how to properly handle NULL",
+    false
+  ],
+  [
+    47,
+    "How to Use Common Table Expressions in MySQL",
+    "Common Table Expressions (CTEs) are powerful database features introduced in MySQL 8.0 that allow you to define temporary result sets that can be referenced within a single SELECT, INSERT, UPDATE, or DELETE statement. This article provides a direct, easy",
+    false
+  ],
+  [
+    46,
+    "How MySQL Processes Derived Tables in FROM Clause",
+    "This article explains how the MySQL query optimizer handles derived tables—subqueries specified within the FROM clause of a SQL statement. It covers the two main processing strategies: merging the derived table into the outer query and materializing it",
+    false
+  ],
+  [
+    45,
+    "Rewrite MySQL Subqueries as JOINs for Performance",
+    "In MySQL databases, subqueries can often lead to performance bottlenecks because the query optimizer may execute them as nested loops or generate inefficient temporary tables. Rewriting these subqueries as JOIN operations is a highly effective optimizati",
+    false
+  ],
+  [
+    44,
+    "MySQL Correlated Subquery Performance",
+    "This article examines the performance implications of using correlated subqueries in MySQL, explaining why they often lead to slow-running queries and high resource consumption. We will analyze the underlying execution mechanics, contrast them with more",
+    false
+  ],
+  [
+    43,
+    "How MySQL Executes CROSS JOIN and When to Use It",
+    "This article explains how MySQL processes a CROSS JOIN by generating a Cartesian product of two tables, details the underlying execution mechanics, and highlights the specific scenarios where using this join type is appropriate and efficient. A CROSS JOI",
+    false
+  ],
+  [
+    42,
+    "Difference Between LEFT JOIN and RIGHT JOIN in MySQL",
+    "Understanding the difference between a LEFT JOIN and a RIGHT JOIN in MySQL is fundamental for retrieving data accurately from multiple tables. While both are outer joins used to combine rows based on a related column, they differ in which table is treate",
+    false
+  ],
+  [
+    41,
+    "How to INNER JOIN Three Tables in MySQL",
+    "Performing an INNER JOIN across three tables in a MySQL database allows you to combine related data from multiple sources based on matching column values. This article provides a straightforward, step-by-step guide on how to write this query, explains th",
+    false
+  ],
+  [
+    40,
+    "How to Use LIMIT and OFFSET in MySQL Pagination",
+    "In MySQL database management, retrieving large datasets all at once can severely degrade application performance and user experience. This article explains how the LIMIT and OFFSET clauses work together to implement efficient database pagination, allowin",
+    false
+  ],
+  [
+    39,
+    "MySQL Full-Text Search on a Specific Column",
+    "Performing a full-text search on a specific column in MySQL allows you to search for complex text patterns and keywords within large datasets much faster than using traditional LIKE queries. This article provides a direct, step-by-step guide on how to en",
+    false
+  ],
+  [
+    38,
+    "MySQL HAVING Clause Explained",
+    "This article explains the function of the HAVING clause in MySQL, focusing on how it filters aggregated data generated by the GROUP BY clause. You will learn the fundamental purpose of the HAVING clause, how it differs from the WHERE clause, and how to a",
+    false
+  ],
+  [
+    37,
+    "How to Use GROUP BY in MySQL to Aggregate Data",
+    "This article provides a straightforward guide on how to use the GROUP BY clause in MySQL to organize and aggregate data. You will learn the fundamental syntax of the clause, how to combine it with essential aggregate functions like COUNT(), SUM(), AVG(),",
+    false
+  ],
+  [
+    36,
+    "TRUNCATE vs DELETE in MySQL: Key Differences",
+    "This article provides a comprehensive comparison between the TRUNCATE and DELETE commands in MySQL. While both commands are used to remove data from a database table, they operate differently under the hood, impacting database performance, transaction sa",
+    false
+  ],
+  [
+    35,
+    "Delete Duplicate Records in MySQL Keeping One",
+    "This guide explains how to safely and efficiently remove duplicate rows from a MySQL database table while preserving a single original record. You will learn how to identify duplicates, back up your data to prevent accidental loss, and execute deletion q",
+    false
+  ],
+  [
+    34,
+    "How to Bulk Update Large MySQL Tables Efficiently",
+    "Updating millions of rows in a large MySQL table can severely degrade database performance, cause replication lag, and lock tables for extended periods. To prevent these issues, developers must use optimized strategies rather than running a single, massi",
+    false
+  ],
+  [
+    33,
+    "How MySQL ON DUPLICATE KEY UPDATE Works",
+    "This article explains how MySQL processes the ON DUPLICATE KEY UPDATE clause during an INSERT operation. It covers the mechanics of how MySQL detects duplicate keys, how it decides whether to insert a new row or update an existing one, and the impact of",
+    false
+  ],
+  [
+    32,
+    "MySQL Insert Multiple Rows Single Query Syntax",
+    "This article provides a clear and concise guide on how to insert multiple rows of data into a MySQL table using a single INSERT statement. You will learn the exact SQL syntax, view a practical example, and understand the performance benefits of using thi",
+    false
+  ],
+  [
+    31,
+    "MySQL Query to Find Highest Paid Employees",
+    "Retrieving information about top earners is a fundamental database operation used in payroll management, financial reporting, and HR analytics. This article demonstrates how to write efficient MySQL queries to find the highest-paid employees from a datab",
+    false
+  ],
+  [
+    30,
+    "Understanding Generated Columns in MySQL",
+    "Generated columns in MySQL allow database administrators and developers to store computed values automatically without manually updating them. This article explains how generated columns work, the differences between virtual and stored types, and how the",
+    false
+  ],
+  [
+    29,
+    "How to Create a Temporary Table in MySQL",
+    "This article explains how to create and use temporary tables in MySQL. You will learn the exact SQL syntax required to build a temporary table, understand how these tables isolate data within a specific session, and see how they automatically destroy the",
+    false
+  ],
+  [
+    28,
+    "Auto-Increment Keys in Distributed MySQL",
+    "Using auto-incrementing primary keys in a distributed MySQL environment introduces significant challenges regarding data consistency, scalability, and network latency. While highly effective for single-instance databases, sequential auto-increment sequen",
+    false
+  ],
+  [
+    27,
+    "MySQL JSON Data Type: Storage and Query Functions",
+    "This article provides a comprehensive overview of how MySQL stores JSON documents and the essential functions available to query them. You will learn about the internal binary format MySQL uses for optimized performance, followed by a practical guide to",
+    false
+  ],
+  [
+    26,
+    "MySQL Maximum Row Size Limit Explained",
+    "This article provides a clear overview of the maximum row size limits in MySQL. It details the hard limits imposed by the MySQL server, the engine-specific restrictions of the default InnoDB storage engine, and practical solutions for handling \"Row size",
+    false
+  ],
+  [
+    25,
+    "Implement Foreign Key Constraints in MySQL",
+    "Maintaining data consistency across database tables is crucial for relational database management. This article provides a straightforward guide on how to implement foreign key constraints in MySQL to ensure referential integrity. You will learn the synt",
+    false
+  ],
+  [
+    24,
+    "Limitations of MySQL ENUM Data Type",
+    "The ENUM data type in MySQL is a string object whose value is chosen from a list of permitted values defined during table creation. While it offers compact storage and basic data validation, using ENUM can introduce significant architectural, operational",
+    false
+  ],
+  [
+    23,
+    "MySQL DATETIME vs TIMESTAMP Differences",
+    "This article explains how MySQL handles date and time functions when utilizing the DATETIME and TIMESTAMP data types. It covers the core differences in time zone handling, storage requirements, supported ranges, and how MySQL functions and queries intera",
+    false
+  ],
+  [
+    22,
+    "MySQL Integer Types and Storage Sizes",
+    "Choosing the correct data type in MySQL is crucial for optimizing database performance and storage efficiency. This article provides a direct overview of the storage requirements, byte sizes, and value ranges for all integer types available in MySQL, inc",
+    false
+  ],
+  [
+    21,
+    "MySQL CHAR vs VARCHAR: How to Choose",
+    "Choosing between the CHAR and VARCHAR data types is a fundamental decision when designing a MySQL database schema. This article provides a direct comparison of these two character string types, explaining how they store data, their performance implicatio",
+    false
+  ],
+  [
+    20,
+    "Purpose of MySQL Secure Installation Script",
+    "The MySQL secure installation script is a built-in security utility designed to safeguard new database deployments by restricting access and correcting default vulnerabilities. This article explains the core purpose of the mysqlsecureinstallation tool, d",
+    false
+  ],
+  [
+    19,
+    "MySQL Default Character Sets and Collations Setup",
+    "This article provides a comprehensive overview of how MySQL configures and applies default character sets and collations during its initial setup and database design. It covers the hierarchical inheritance system MySQL uses—from the server level down t",
+    false
+  ],
+  [
+    18,
+    "How to Run Multiple MySQL Instances on One Server",
+    "Running multiple MySQL instances on a single physical server is an efficient way to isolate databases, test different configurations, or maximize hardware utilization. This article provides a step-by-step guide on how to configure, initialize, and run mu",
+    false
+  ],
+  [
+    17,
+    "How to Enable MySQL Slow Query Log",
+    "Identifying slow-running database queries is essential for optimizing application performance. This guide provides a straightforward, step-by-step walkthrough on how to enable and configure the slow query log in MySQL using the configuration file for per",
+    false
+  ],
+  [
+    16,
+    "Best Practices for MySQL Environment Variables",
+    "Setting up environment variables for MySQL is crucial for securing database credentials, simplifying command-line access, and streamlining application deployment. This guide covers the best practices for configuring these variables, focusing on security,",
+    false
+  ],
+  [
+    15,
+    "MySQL Memory Allocation and Buffer Pool Settings",
+    "This article explains how MySQL manages memory allocation through the InnoDB buffer pool, the primary memory area used to cache table and index data. You will learn about the key configuration settings that control buffer pool behavior, how MySQL organiz",
+    false
+  ],
+  [
+    14,
+    "How to Upgrade MySQL to the Latest Version",
+    "Upgrading an older MySQL database to the latest release is critical for security, performance, and accessing new database features. This guide provides a straightforward, step-by-step walkthrough of the upgrade process, covering compatibility checks, dat",
+    false
+  ],
+  [
+    13,
+    "How to Change the Default MySQL Port",
+    "By default, MySQL databases listen on port 3306. Changing this default port is a common practice to improve security through obscurity or to resolve port conflicts when running multiple database instances on the same server. This article provides a step-",
+    false
+  ],
+  [
+    12,
+    "How to Securely Install MySQL on Linux",
+    "Securing a MySQL database is critical for protecting sensitive data from unauthorized access, breaches, and potential exploits. This guide provides a step-by-step walkthrough for performing a secure installation of MySQL on a Linux server. It covers upda",
+    false
+  ],
+  [
+    11,
+    "Optimize MySQL Performance with my.cnf Configuration",
+    "This article provides a straightforward guide on how to configure the MySQL initialization file (my.cnf or my.ini) to optimize database performance. You will learn how to locate the configuration file and adjust key parameters—such as memory allocation",
+    false
+  ],
+  [
+    10,
+    "Understanding the MySQL Data Directory",
+    "The MySQL data directory is the central storage location where a database server houses all its actual data, schema definitions, system tables, and operational logs. Understanding its significance is crucial for database administrators and system enginee",
+    false
+  ],
+  [
+    9,
+    "How MySQL Server Processes Network Requests",
+    "This article provides a technical overview of how the MySQL server daemon (mysqld) manages and processes incoming network requests from clients. It covers the lifecycle of a database request, including network listening, connection handling, authenticati",
+    false
+  ],
+  [
+    8,
+    "Advantages of MySQL for Web Applications",
+    "MySQL is one of the most popular relational database management systems used in web development today. This article explores the primary advantages of using MySQL for web applications, highlighting its performance, scalability, security, cost-effectivene",
+    false
+  ],
+  [
+    7,
+    "How MySQL Uses Information Schema and System Catalog",
+    "This article explores how MySQL utilizes its system catalog and the INFORMATIONSCHEMA database to manage database metadata. We will examine how MySQL stores structural information about databases, tables, columns, and privileges, and how both the databas",
+    false
+  ],
+  [
+    6,
+    "Role of MySQL Query Optimizer in Query Execution",
+    "The MySQL query optimizer plays a critical role in database performance by determining the most efficient way to execute a given SQL query. This article explores how the optimizer functions, its cost-based decision-making process, and the key techniques",
+    false
+  ],
+  [
+    5,
+    "MySQL vs MongoDB: Key Differences Explained",
+    "Choosing the right database is crucial for application performance, scalability, and development speed. This article compares MySQL, a traditional relational database, with MongoDB, a popular non-relational (NoSQL) document database. We explore their fun",
+    false
+  ],
+  [
+    4,
+    "How MySQL Handles Concurrent Client Connections",
+    "MySQL manages concurrent connections from multiple client applications by utilizing a multi-threaded architecture combined with sophisticated locking mechanisms and storage engine-level concurrency controls. When multiple clients connect simultaneously,",
+    false
+  ],
+  [
+    3,
+    "MySQL Server Architecture Components",
+    "This article provides an overview of the key architectural components of a standard MySQL database server. It explains how the server manages client connections, parses and optimizes SQL queries, and utilizes a pluggable storage engine layer to store and",
+    false
+  ],
+  [
+    2,
+    "Difference Between InnoDB and MyISAM in MySQL",
+    "This article provides a direct comparison between InnoDB and MyISAM, the two most well-known storage engines in MySQL. It outlines their fundamental differences in transaction support, locking mechanisms, foreign key constraints, and crash recovery to he",
+    false
+  ],
+  [
+    1,
+    "What is the Primary Function of MySQL",
+    "This article provides an overview of the MySQL database management system and defines its primary function. We will examine how MySQL stores, organizes, and retrieves data using the relational model, and how it serves as the backbone for modern web appli",
+    false
+  ]
+]
