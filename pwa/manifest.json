@@ -1,0 +1,22 @@
+{
+  "short_name": "mysql",
+  "name": "mysql",
+  "icons": [
+    {
+      "src": "/mysql/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/mysql/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "https://salivity.github.io/mysql",
+  "background_color": "#F0F4F8",
+  "theme_color": "#F0F4F8",
+  "display": "standalone",
+  "orientation": "portrait"
+}
